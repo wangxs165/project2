@@ -1,0 +1,93 @@
+# Resume Checkpoint
+
+Last updated: 2026-05-01
+
+## Current Goal
+
+Build the Phase I local-only MVP from `trading_monitoring.md` with robust tests.
+
+## Current State
+
+- Planning document exists: `trading_monitoring.md`
+- Comprehensive test plan exists: `test_plan.md`
+- Initial Phase I backend scaffold is implemented.
+- Core business logic is implemented for:
+  - config safety
+  - market-hours detection
+  - data validation
+  - indicator calculations
+  - signal scoring
+  - suggested buying price calculation
+  - alert cooldown and daily cap gates
+  - Telegram alert formatting
+  - SQLite persistence
+  - simple news context classification
+  - IBKR market-data-only adapter shell
+- Provider-driven monitoring cycle service is implemented.
+- Deterministic intraday backtesting runner is implemented.
+- API start/stop is wired to a real background monitoring runner.
+- `POST /monitoring/run-once` is available.
+- Local FastAPI API scaffold exists.
+- Local static dashboard scaffold exists at `backend/trading_monitor/static/index.html`.
+- `.venv` exists and has FastAPI, uvicorn, pytest, httpx, and ib_insync installed.
+- No live IBKR, Telegram, or internet-dependent tests should be required for
+  default verification.
+
+## Verification Command
+
+```bash
+python3 -m unittest discover -s tests
+```
+
+## Next Work Items
+
+- [x] Finish backend core modules.
+- [x] Add standard-library automated tests.
+- [x] Run the test suite.
+- [x] Add local API/dashboard scaffold.
+- [x] Record passing/failing tests and next steps here.
+- [ ] Install optional API dependencies when internet access is available:
+  `python3 -m pip install -e ".[api]"`
+- [ ] Run FastAPI integration tests after dependency installation:
+  `python3 -m unittest tests.test_api_optional`
+- [ ] Start local API/dashboard:
+  `python3 -m backend.trading_monitor.api`
+- [x] Implement provider-driven monitoring cycle.
+- [x] Implement deterministic historical backtesting runner.
+- [x] Wire monitoring service into API start/stop lifecycle.
+- [ ] Test real IBKR market-data provider against local TWS or IB Gateway.
+- [ ] Add historical-bar ingestion storage APIs beyond the current provider calls.
+- [ ] Add live/manual smoke-test checklist results for IBKR and Telegram.
+
+## Known Environment Notes
+
+- Python version observed: 3.9.6
+- `pytest` is not installed.
+- The directory is not currently a git repository.
+- Keep the app local-only by default: `127.0.0.1:8080`.
+- Default test result on 2026-05-01:
+  `59 tests OK, 1 skipped because FastAPI is not installed`.
+- Venv test result on 2026-05-01:
+  `.venv/bin/python -m pytest -q` -> `58 passed, 1 skipped`.
+- Syntax sweep command:
+  `PYTHONPYCACHEPREFIX=/tmp/project2_pycache python3 -m compileall backend tests`
+- Port check on 2026-05-01:
+  `8080` is not listening; `5000` and `7000` are used by `ControlCe`.
+- Local API startup reached app initialization but sandbox binding to
+  `127.0.0.1:8080` failed with `operation not permitted`.
+- After user granted operation permission, local API started successfully on:
+  `http://127.0.0.1:8080`
+- Verified endpoints:
+  - `GET /health`
+  - `GET /symbols`
+  - `GET /status`
+- Updated endpoint verification:
+  - `POST /monitoring/run-once`
+  - `POST /monitoring/start`
+  - `POST /monitoring/stop`
+- Current venv test result:
+  `.venv/bin/python -m pytest -q` -> `62 passed, 1 skipped`.
+- `ib_insync` is installed: `0.9.86`.
+- No local listener was detected on common IBKR ports `7496`, `7497`, `4001`,
+  or `4002`. Start TWS or IB Gateway with API access enabled before live IBKR
+  testing.

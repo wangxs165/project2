@@ -1,0 +1,160 @@
+from __future__ import annotations
+
+from contextlib import asynccontextmanager
+from datetime import datetime, timezone
+from pathlib import Path
+from typing import Dict, Optional
+
+from .config import AppConfig, load_config
+from .ibkr import IbkrMarketDataClient
+from .monitoring import MonitoringService, NeutralNewsProvider
+from .models import DISCLAIMER, NotificationRecord, ScoreBreakdown, SignalDecision, normalize_symbol
+from .runtime import BackgroundMonitoringRunner, MonitoringRuntime
+from .storage import Storage
+from .telegram import TelegramClient
+
+
+def create_app(
+    config: Optional[AppConfig] = None,
+    storage: Optional[Storage] = None,
+    monitoring_service: Optional[MonitoringService] = None,
+):
+    try:
+        from fastapi import FastAPI, HTTPException
+        from fastapi.responses import FileResponse
+        from fastapi.staticfiles import StaticFiles
+    except ImportError as exc:  # pragma: no cover - depends on optional dependency
+        raise RuntimeError(
+            "FastAPI is not installed. Install API dependencies with: "
+            'python3 -m pip install -e ".[api]"'
+        ) from exc
+
+    app_config = config or load_config()
+    app_storage = storage or Storage(app_config.db_path)
+    app_storage.initialize(app_config.symbols)
+    service = monitoring_service or MonitoringService(
+        storage=app_storage,
+        config=app_config,
+        market_data=IbkrMarketDataClient(app_config.ibkr),
+        notifier=TelegramClient(app_config.telegram.bot_token, app_config.telegram.chat_id),
+        news_provider=NeutralNewsProvider(),
+        stale_after_seconds=app_config.monitoring.stale_after_seconds,
+    )
+    runner = BackgroundMonitoringRunner(service, app_config.monitoring.interval_seconds)
+    runtime = MonitoringRuntime(app_storage, runner)
+    static_dir = Path(__file__).parent / "static"
+
+    @asynccontextmanager
+    async def lifespan(app):
+        try:
+            yield
+        finally:
+            runtime.stop()
+
+    app = FastAPI(
+        title="Intraday Investment Monitoring App",
+        version="0.1.0",
+        lifespan=lifespan,
+    )
+    app.mount("/static", StaticFiles(directory=static_dir), name="static")
+
+    @app.get("/")
+    def index():
+        return FileResponse(static_dir / "index.html")
+
+    @app.get("/health")
+    def health():
+        return {
+            "ok": True,
+            "monitoring_only": True,
+            "auto_trade_enabled": False,
+            "disclaimer": DISCLAIMER,
+        }
+
+    @app.get("/status")
+    def status():
+        return runtime.status()
+
+    @app.get("/symbols")
+    def list_symbols():
+        return {"symbols": app_storage.get_watchlist()}
+
+    @app.post("/symbols")
+    def add_symbol(payload: Dict[str, str]):
+        symbol = payload.get("symbol", "")
+        try:
+            normalized = app_storage.add_symbol(symbol)
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+        return {"symbol": normalized, "symbols": app_storage.get_watchlist()}
+
+    @app.delete("/symbols/{symbol}")
+    def remove_symbol(symbol: str):
+        try:
+            normalized = normalize_symbol(symbol)
+            removed = app_storage.remove_symbol(normalized)
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+        return {"symbol": normalized, "removed": removed, "symbols": app_storage.get_watchlist()}
+
+    @app.post("/monitoring/start")
+    def start_monitoring():
+        return runtime.start()
+
+    @app.post("/monitoring/stop")
+    def stop_monitoring():
+        return runtime.stop()
+
+    @app.post("/monitoring/run-once")
+    def run_monitoring_once():
+        return runtime.run_once()
+
+    @app.get("/prices")
+    def prices():
+        return {"prices": app_storage.latest_prices()}
+
+    @app.get("/signals")
+    def signals(limit: int = 100):
+        return {"signals": app_storage.list_signals(limit=limit)}
+
+    @app.get("/notifications")
+    def notifications(limit: int = 100):
+        return {"notifications": app_storage.list_notifications(limit=limit)}
+
+    @app.post("/notifications/test")
+    def test_notification():
+        dummy = SignalDecision(
+            symbol=app_storage.get_watchlist()[0],
+            current_price=1.0,
+            suggested_buy_price=1.0,
+            confidence=0,
+            band="Test notification",
+            should_alert=False,
+            reasons=["Telegram test notification."],
+            market_context_summary="Manual test.",
+            score_breakdown=ScoreBreakdown(0, 0, 0, 0, 0),
+            created_at=datetime.now(timezone.utc),
+        )
+        client = TelegramClient(app_config.telegram.bot_token, app_config.telegram.chat_id)
+        record = client.send_signal(dummy)
+        app_storage.save_notification(record)
+        return {"status": record.status, "error": record.error}
+
+    return app
+
+
+def main() -> None:
+    try:
+        import uvicorn
+    except ImportError as exc:  # pragma: no cover - depends on optional dependency
+        raise RuntimeError(
+            "uvicorn is not installed. Install API dependencies with: "
+            'python3 -m pip install -e ".[api]"'
+        ) from exc
+
+    config = load_config()
+    uvicorn.run(create_app(config), host=config.gui.host, port=config.gui.port)
+
+
+if __name__ == "__main__":
+    main()

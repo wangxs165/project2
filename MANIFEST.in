@@ -1,0 +1,2 @@
+recursive-include backend/trading_monitor/static *.html
+

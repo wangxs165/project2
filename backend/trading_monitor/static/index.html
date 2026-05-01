@@ -1,0 +1,227 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Intraday Monitor</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --bg: #f6f7f9;
+        --panel: #ffffff;
+        --text: #17202a;
+        --muted: #5e6b78;
+        --line: #d9e0e7;
+        --accent: #16697a;
+        --danger: #a33a3a;
+        --ok: #2f7d4f;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        background: var(--bg);
+        color: var(--text);
+      }
+      header {
+        padding: 20px 24px;
+        border-bottom: 1px solid var(--line);
+        background: var(--panel);
+      }
+      h1 {
+        margin: 0;
+        font-size: 22px;
+        letter-spacing: 0;
+      }
+      main {
+        display: grid;
+        gap: 16px;
+        padding: 20px 24px;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      }
+      section {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 16px;
+        min-width: 0;
+      }
+      h2 {
+        margin: 0 0 12px;
+        font-size: 16px;
+      }
+      button {
+        border: 1px solid var(--accent);
+        background: var(--accent);
+        color: white;
+        border-radius: 6px;
+        padding: 8px 12px;
+        font-size: 14px;
+        cursor: pointer;
+      }
+      button.secondary {
+        background: white;
+        color: var(--accent);
+      }
+      input {
+        width: 140px;
+        padding: 8px;
+        border: 1px solid var(--line);
+        border-radius: 6px;
+        font-size: 14px;
+        text-transform: uppercase;
+      }
+      .row {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        flex-wrap: wrap;
+      }
+      .muted {
+        color: var(--muted);
+        font-size: 13px;
+      }
+      .pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        padding: 6px 10px;
+        margin: 0 6px 6px 0;
+        background: #fbfcfd;
+      }
+      .status-ok {
+        color: var(--ok);
+      }
+      .status-bad {
+        color: var(--danger);
+      }
+      pre {
+        margin: 0;
+        white-space: pre-wrap;
+        overflow-wrap: anywhere;
+        font-size: 12px;
+        line-height: 1.4;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>Intraday Investment Monitor</h1>
+      <div class="muted">Monitoring suggestion only. This app does not place trades.</div>
+    </header>
+    <main>
+      <section>
+        <h2>Status</h2>
+        <div id="status" class="muted">Loading...</div>
+        <div class="row" style="margin-top: 12px">
+          <button id="start">Start</button>
+          <button id="stop" class="secondary">Stop</button>
+        </div>
+      </section>
+
+      <section>
+        <h2>Watchlist</h2>
+        <div id="symbols"></div>
+        <div class="row" style="margin-top: 10px">
+          <input id="symbol-input" maxlength="10" placeholder="SYMBOL" />
+          <button id="add-symbol">Add</button>
+        </div>
+      </section>
+
+      <section>
+        <h2>Latest Prices</h2>
+        <pre id="prices">No price data yet.</pre>
+      </section>
+
+      <section>
+        <h2>Signals</h2>
+        <pre id="signals">No signals yet.</pre>
+      </section>
+
+      <section>
+        <h2>Notifications</h2>
+        <pre id="notifications">No notifications yet.</pre>
+      </section>
+    </main>
+    <script>
+      async function json(path, options) {
+        const response = await fetch(path, options);
+        if (!response.ok) {
+          throw new Error(await response.text());
+        }
+        return response.json();
+      }
+
+      function pretty(value) {
+        return JSON.stringify(value, null, 2);
+      }
+
+      async function refresh() {
+        const [status, symbols, prices, signals, notifications] = await Promise.all([
+          json("/status"),
+          json("/symbols"),
+          json("/prices"),
+          json("/signals"),
+          json("/notifications"),
+        ]);
+
+        document.getElementById("status").innerHTML = `
+          <div>Monitoring:
+            <strong class="${status.monitoring ? "status-ok" : "status-bad"}">
+              ${status.monitoring ? "running" : "stopped"}
+            </strong>
+          </div>
+          <div>IBKR: ${status.ibkr_status}</div>
+          <div>Tracked symbols: ${status.tracked_symbols.length}</div>
+          <div>Cycles completed: ${status.runner.cycles_completed}</div>
+          <div>Last cycle: ${status.runner.last_cycle_at || "none"}</div>
+          <div>Last market open check: ${
+            status.runner.last_cycle_result ? status.runner.last_cycle_result.market_open : "none"
+          }</div>
+        `;
+
+        document.getElementById("symbols").innerHTML = symbols.symbols
+          .map((symbol) => `<span class="pill">${symbol}
+            <button class="secondary" data-remove="${symbol}">Remove</button>
+          </span>`)
+          .join("");
+
+        document.getElementById("prices").textContent = pretty(prices.prices);
+        document.getElementById("signals").textContent = pretty(signals.signals.slice(0, 5));
+        document.getElementById("notifications").textContent = pretty(notifications.notifications.slice(0, 5));
+      }
+
+      document.getElementById("start").addEventListener("click", async () => {
+        await json("/monitoring/start", { method: "POST" });
+        refresh();
+      });
+      document.getElementById("stop").addEventListener("click", async () => {
+        await json("/monitoring/stop", { method: "POST" });
+        refresh();
+      });
+      document.getElementById("add-symbol").addEventListener("click", async () => {
+        const input = document.getElementById("symbol-input");
+        await json("/symbols", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ symbol: input.value }),
+        });
+        input.value = "";
+        refresh();
+      });
+      document.getElementById("symbols").addEventListener("click", async (event) => {
+        const symbol = event.target.dataset.remove;
+        if (!symbol) return;
+        await json(`/symbols/${symbol}`, { method: "DELETE" });
+        refresh();
+      });
+
+      refresh();
+      setInterval(refresh, 10000);
+    </script>
+  </body>
+</html>
