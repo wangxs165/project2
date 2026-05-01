@@ -175,7 +175,7 @@
               ${status.monitoring ? "running" : "stopped"}
             </strong>
           </div>
-          <div>IBKR: ${status.ibkr_status}</div>
+          <div>Data provider: ${status.data_provider} (${status.data_provider_status})</div>
           <div>Tracked symbols: ${status.tracked_symbols.length}</div>
           <div>Cycles completed: ${status.runner.cycles_completed}</div>
           <div>Last cycle: ${status.runner.last_cycle_at || "none"}</div>

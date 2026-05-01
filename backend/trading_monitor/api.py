@@ -12,6 +12,7 @@ from .models import DISCLAIMER, NotificationRecord, ScoreBreakdown, SignalDecisi
 from .runtime import BackgroundMonitoringRunner, MonitoringRuntime
 from .storage import Storage
 from .telegram import TelegramClient
+from .yahoo import YFinanceMarketDataClient
 
 
 def create_app(
@@ -32,16 +33,24 @@ def create_app(
     app_config = config or load_config()
     app_storage = storage or Storage(app_config.db_path)
     app_storage.initialize(app_config.symbols)
+    if app_config.data_provider.name == "ibkr":
+        market_data = IbkrMarketDataClient(app_config.ibkr)
+    else:
+        market_data = YFinanceMarketDataClient(
+            interval=app_config.data_provider.intraday_interval,
+            daily_lookback_period=app_config.data_provider.daily_lookback_period,
+        )
     service = monitoring_service or MonitoringService(
         storage=app_storage,
         config=app_config,
-        market_data=IbkrMarketDataClient(app_config.ibkr),
+        market_data=market_data,
         notifier=TelegramClient(app_config.telegram.bot_token, app_config.telegram.chat_id),
         news_provider=NeutralNewsProvider(),
         stale_after_seconds=app_config.monitoring.stale_after_seconds,
     )
     runner = BackgroundMonitoringRunner(service, app_config.monitoring.interval_seconds)
     runtime = MonitoringRuntime(app_storage, runner)
+    runtime.data_provider = app_config.data_provider.name
     static_dir = Path(__file__).parent / "static"
 
     @asynccontextmanager

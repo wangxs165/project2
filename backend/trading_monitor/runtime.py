@@ -94,8 +94,8 @@ class MonitoringRuntime:
     running: bool = False
     started_at: str = ""
     stopped_at: str = ""
-    ibkr_connected: bool = False
-    ibkr_status: str = "not connected"
+    data_provider: str = "yfinance"
+    data_provider_status: str = "configured"
 
     def start(self) -> Dict[str, object]:
         started = self.runner.start()
@@ -126,8 +126,8 @@ class MonitoringRuntime:
             "monitoring": self.running,
             "started_at": self.started_at,
             "stopped_at": self.stopped_at,
-            "ibkr_connected": self.ibkr_connected,
-            "ibkr_status": self.ibkr_status,
+            "data_provider": self.data_provider,
+            "data_provider_status": self.data_provider_status,
             "tracked_symbols": self.storage.get_watchlist(),
             "latest_price_count": len(latest_prices),
             "runner": runner_status,

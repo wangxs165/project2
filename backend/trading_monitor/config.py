@@ -67,6 +67,13 @@ class IbkrConfig:
 
 
 @dataclass(frozen=True)
+class DataProviderConfig:
+    name: str = "yfinance"
+    intraday_interval: str = "1m"
+    daily_lookback_period: str = "1y"
+
+
+@dataclass(frozen=True)
 class GuiConfig:
     host: str = "127.0.0.1"
     port: int = 8080
@@ -86,6 +93,7 @@ class AppConfig:
     alerts: AlertConfig = AlertConfig()
     telegram: TelegramConfig = TelegramConfig()
     ibkr: IbkrConfig = IbkrConfig()
+    data_provider: DataProviderConfig = DataProviderConfig()
     gui: GuiConfig = GuiConfig()
     monitoring: MonitoringConfig = MonitoringConfig()
     auto_trade_enabled: bool = False
@@ -109,6 +117,19 @@ class AppConfig:
             raise ConfigError("monitoring interval must be at least 1 second")
         if self.monitoring.stale_after_seconds < 1:
             raise ConfigError("stale data threshold must be at least 1 second")
+        if self.data_provider.name not in {"yfinance", "ibkr"}:
+            raise ConfigError("DATA_PROVIDER must be either 'yfinance' or 'ibkr'")
+        if self.data_provider.intraday_interval not in {
+            "1m",
+            "2m",
+            "5m",
+            "15m",
+            "30m",
+            "60m",
+            "90m",
+            "1h",
+        }:
+            raise ConfigError("YFINANCE_INTRADAY_INTERVAL is not supported")
         if self.auto_trade_enabled:
             raise ConfigError("auto_trade_enabled must remain false")
 
@@ -148,6 +169,11 @@ def load_config(env: Mapping[str, str] = os.environ) -> AppConfig:
             host=env.get("IBKR_HOST", "127.0.0.1"),
             port=_int_from_env(env.get("IBKR_PORT", ""), 7497, "IBKR_PORT"),
             client_id=_int_from_env(env.get("IBKR_CLIENT_ID", ""), 11, "IBKR_CLIENT_ID"),
+        ),
+        data_provider=DataProviderConfig(
+            name=env.get("DATA_PROVIDER", "yfinance").strip().lower() or "yfinance",
+            intraday_interval=env.get("YFINANCE_INTRADAY_INTERVAL", "1m"),
+            daily_lookback_period=env.get("YFINANCE_DAILY_LOOKBACK_PERIOD", "1y"),
         ),
         gui=GuiConfig(
             host=env.get("APP_HOST", "127.0.0.1"),

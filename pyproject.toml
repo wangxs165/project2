@@ -10,6 +10,9 @@ api = [
   "fastapi>=0.110",
   "uvicorn>=0.27",
 ]
+yfinance = [
+  "yfinance>=0.2.66",
+]
 ibkr = [
   "ib_insync>=0.9.86",
 ]
@@ -22,4 +25,3 @@ test = [
 [tool.ruff]
 line-length = 100
 target-version = "py39"
-

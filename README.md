@@ -14,9 +14,9 @@ robustness test strategy.
 
 ## Current Implementation Status
 
-The current codebase contains the initial backend scaffold, core domain logic,
-SQLite persistence, notification formatting, a small local dashboard, and
-standard-library tests.
+The current codebase contains the initial backend scaffold, yfinance market-data
+provider, core domain logic, SQLite persistence, notification formatting, a
+small local dashboard, and standard-library tests.
 
 Because this project may be interrupted, use:
 
@@ -34,7 +34,7 @@ python3 -m unittest discover -s tests
 Install runtime dependencies first:
 
 ```bash
-python3 -m pip install -e ".[api]"
+python3 -m pip install -e ".[api,yfinance]"
 ```
 
 Then start the local app:
@@ -55,11 +55,23 @@ curl -X POST http://127.0.0.1:8080/monitoring/start
 curl -X POST http://127.0.0.1:8080/monitoring/stop
 ```
 
-For IBKR live data, TWS or IB Gateway must be running locally and listening on
-the configured API port, usually `7497` for paper TWS or `4002` for paper IB
-Gateway.
+The default market-data provider is `yfinance`, using Yahoo Finance data for
+local monitoring. This is convenient for development and personal monitoring,
+but it has no broker-grade latency, accuracy, or uptime guarantee. Alerts are
+blocked when data is stale.
 
-## Check IBKR Market Data
+Useful provider settings:
+
+```bash
+DATA_PROVIDER=yfinance
+YFINANCE_INTRADAY_INTERVAL=1m
+YFINANCE_DAILY_LOOKBACK_PERIOD=1y
+```
+
+IBKR remains available as an optional future provider by setting
+`DATA_PROVIDER=ibkr` and installing `.[ibkr]`.
+
+## Optional: Check IBKR Market Data
 
 Start and log in to TWS or IB Gateway first. In TWS, open Global Configuration,
 then API, then Settings:

@@ -23,6 +23,7 @@ Build the Phase I local-only MVP from `trading_monitoring.md` with robust tests.
   - SQLite persistence
   - simple news context classification
   - IBKR market-data-only adapter shell
+  - yfinance/Yahoo Finance market-data provider
 - Provider-driven monitoring cycle service is implemented.
 - Deterministic intraday backtesting runner is implemented.
 - API start/stop is wired to a real background monitoring runner.
@@ -30,7 +31,7 @@ Build the Phase I local-only MVP from `trading_monitoring.md` with robust tests.
 - Local FastAPI API scaffold exists.
 - Local static dashboard scaffold exists at `backend/trading_monitor/static/index.html`.
 - `.venv` exists and has FastAPI, uvicorn, pytest, httpx, and ib_insync installed.
-- No live IBKR, Telegram, or internet-dependent tests should be required for
+- No live yfinance, IBKR, Telegram, or internet-dependent tests should be required for
   default verification.
 
 ## Verification Command
@@ -46,8 +47,8 @@ python3 -m unittest discover -s tests
 - [x] Run the test suite.
 - [x] Add local API/dashboard scaffold.
 - [x] Record passing/failing tests and next steps here.
-- [ ] Install optional API dependencies when internet access is available:
-  `python3 -m pip install -e ".[api]"`
+- [ ] Install optional API and yfinance dependencies when internet access is available:
+  `python3 -m pip install -e ".[api,yfinance]"`
 - [ ] Run FastAPI integration tests after dependency installation:
   `python3 -m unittest tests.test_api_optional`
 - [ ] Start local API/dashboard:
@@ -55,7 +56,8 @@ python3 -m unittest discover -s tests
 - [x] Implement provider-driven monitoring cycle.
 - [x] Implement deterministic historical backtesting runner.
 - [x] Wire monitoring service into API start/stop lifecycle.
-- [ ] Test real IBKR market-data provider against local TWS or IB Gateway.
+- [ ] Test yfinance provider against live Yahoo Finance responses.
+- [ ] Keep real IBKR market-data provider optional for local TWS or IB Gateway.
 - [ ] Add historical-bar ingestion storage APIs beyond the current provider calls.
 - [ ] Add live/manual smoke-test checklist results for IBKR and Telegram.
 
@@ -93,3 +95,5 @@ python3 -m unittest discover -s tests
   testing.
 - Added IBKR connectivity probe:
   `python3 -m backend.trading_monitor.ibkr_probe --symbol VOO`
+- Default provider changed to yfinance on 2026-05-01 so development can proceed
+  without IB Gateway. IBKR is optional via `DATA_PROVIDER=ibkr`.

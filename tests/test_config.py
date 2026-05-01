@@ -13,6 +13,7 @@ class ConfigTests(unittest.TestCase):
         self.assertFalse(config.auto_trade_enabled)
         self.assertEqual(config.alerts.min_confidence, 75)
         self.assertEqual(config.db_path, Path("data/trading_monitor.sqlite"))
+        self.assertEqual(config.data_provider.name, "yfinance")
 
     def test_watchlist_is_normalized_and_deduplicated(self):
         config = load_config({"WATCHLIST": "voo, iau, VOO, qqq"})
@@ -39,6 +40,13 @@ class ConfigTests(unittest.TestCase):
         with self.assertRaises(ConfigError):
             load_config({"MAX_ALERTS_PER_SYMBOL_PER_DAY": "0"})
 
+    def test_data_provider_config_is_validated(self):
+        self.assertEqual(load_config({"DATA_PROVIDER": "IBKR"}).data_provider.name, "ibkr")
+        with self.assertRaises(ConfigError):
+            load_config({"DATA_PROVIDER": "unknown"})
+        with self.assertRaises(ConfigError):
+            load_config({"YFINANCE_INTRADAY_INTERVAL": "3d"})
+
     def test_telegram_credentials_are_read_from_environment(self):
         config = load_config({"TELEGRAM_BOT_TOKEN": "token", "TELEGRAM_CHAT_ID": "chat"})
 
@@ -53,4 +61,3 @@ class ConfigTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
-

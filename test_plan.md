@@ -16,7 +16,7 @@ The test suite must verify that the app:
 - Sends Telegram alerts only when all risk controls pass.
 - Preserves all signal and notification history.
 - Keeps secrets out of logs, responses, and persisted records.
-- Recovers cleanly from IBKR, network, Telegram, and database failures.
+- Recovers cleanly from yfinance, optional IBKR, network, Telegram, and database failures.
 
 ## 2. Recommended Test Stack
 
@@ -48,8 +48,8 @@ Core fixtures:
 - A daylight-saving-time boundary day.
 - News fixtures with positive, neutral, negative, and high-risk headlines.
 
-Live IBKR and Telegram tests should be optional manual smoke tests, gated behind
-environment variables, and excluded from default CI.
+Live yfinance, IBKR, and Telegram tests should be optional manual smoke tests,
+gated behind environment variables, and excluded from default CI.
 
 ## 4. Unit Test Cases
 
@@ -95,7 +95,20 @@ Test cases:
 - Detects out-of-order bars and stores them consistently.
 - Deduplicates repeated bars for the same symbol and timestamp.
 
-### 4.4 IBKR Data Service
+### 4.4 yfinance Data Service
+
+Use mocked yfinance objects.
+
+Test cases:
+
+- Converts yfinance intraday bars into common bar models.
+- Converts latest yfinance bar into common price update model.
+- Marks yfinance data as delayed/informational.
+- Handles empty, stale, missing, malformed, and rate-limited responses.
+- Respects configured intraday interval.
+- Does not require live internet access in default tests.
+
+### 4.5 Optional IBKR Data Service
 
 Use mocked `ib_insync` objects.
 
@@ -226,7 +239,7 @@ Test cases:
 Test cases:
 
 - `GET /health` returns app status.
-- `GET /status` returns IBKR connection, monitoring state, data freshness, and scheduler state.
+- `GET /status` returns data-provider status, monitoring state, data freshness, and scheduler state.
 - `GET /symbols` returns current watchlist.
 - `POST /symbols` adds a valid symbol.
 - `POST /symbols` rejects invalid symbols.
@@ -253,7 +266,7 @@ Test cases:
 - Price table renders stale-data warnings.
 - Signal history renders confidence score and explanation.
 - Notification history renders sent and failed statuses.
-- IBKR status indicator renders connected, disconnected, delayed, and stale states.
+- Data-provider status indicator renders connected, disconnected, delayed, and stale states.
 - Empty states render without layout breakage.
 
 ### 6.2 End-to-End Tests

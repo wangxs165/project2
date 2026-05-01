@@ -1,10 +1,12 @@
 import unittest
 from datetime import datetime, timezone
+from unittest.mock import Mock, patch
 
 from backend.trading_monitor.ibkr import IbkrMarketDataClient
 from backend.trading_monitor.ibkr_probe import candidate_ports
 from backend.trading_monitor.models import Bar, NewsContext, PriceUpdate, ValidationError, normalize_symbol
 from backend.trading_monitor.news import Headline, analyze_headlines
+from backend.trading_monitor.yahoo import YFinanceMarketDataClient
 
 
 class ModelValidationTests(unittest.TestCase):
@@ -89,6 +91,86 @@ class IbkrAdapterTests(unittest.TestCase):
 
         forbidden = [name for name in dir(client) if "order" in name.lower() or "trade" in name.lower()]
         self.assertEqual(forbidden, [])
+
+
+class FakeTimestamp:
+    def __init__(self, value):
+        self.value = value
+
+    def to_pydatetime(self):
+        return self.value
+
+
+class FakeSeries:
+    def __init__(self, values):
+        self.values = values
+
+    def dropna(self):
+        return self
+
+    def tolist(self):
+        return self.values
+
+
+class FakeFrame:
+    def __init__(self, rows):
+        self.rows = rows
+        self.empty = not rows
+
+    def dropna(self, subset=None):
+        return self
+
+    def iterrows(self):
+        for timestamp, row in self.rows:
+            yield FakeTimestamp(timestamp), row
+
+    def __contains__(self, key):
+        return key == "Close"
+
+    def __getitem__(self, key):
+        if key != "Close":
+            raise KeyError(key)
+        return FakeSeries([row["Close"] for _, row in self.rows])
+
+
+class YFinanceAdapterTests(unittest.TestCase):
+    def test_yfinance_adapter_converts_intraday_bars_and_latest_price(self):
+        now = datetime(2026, 5, 1, 16, 0, tzinfo=timezone.utc)
+        frame = FakeFrame(
+            [
+                (now, {"Open": 100, "High": 101, "Low": 99, "Close": 100.5, "Volume": 1200}),
+            ]
+        )
+        ticker = Mock()
+        ticker.history.return_value = frame
+        client = YFinanceMarketDataClient()
+
+        with patch.object(client, "_ticker", return_value=ticker):
+            bars = client.intraday_bars("voo", now)
+            update = client.latest_price("voo", now)
+
+        self.assertEqual(bars[0].symbol, "VOO")
+        self.assertEqual(bars[0].source, "yfinance")
+        self.assertEqual(update.price, 100.5)
+        self.assertTrue(update.delayed)
+        self.assertEqual(update.source, "yfinance")
+
+    def test_yfinance_adapter_returns_daily_closes(self):
+        now = datetime(2026, 5, 1, 16, 0, tzinfo=timezone.utc)
+        frame = FakeFrame(
+            [
+                (now, {"Open": 100, "High": 101, "Low": 99, "Close": 100.5, "Volume": 1200}),
+                (now, {"Open": 101, "High": 102, "Low": 100, "Close": 101.5, "Volume": 1300}),
+            ]
+        )
+        ticker = Mock()
+        ticker.history.return_value = frame
+        client = YFinanceMarketDataClient()
+
+        with patch.object(client, "_ticker", return_value=ticker):
+            closes = client.daily_closes("VOO", 1)
+
+        self.assertEqual(closes, [101.5])
 
 
 if __name__ == "__main__":

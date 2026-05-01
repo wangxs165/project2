@@ -257,6 +257,20 @@ OK (skipped=1)
 - No listener was detected on those ports, so live IBKR connection testing
   cannot proceed until TWS or IB Gateway is running with API access enabled.
 
+### Checkpoint 10: yfinance Selected As Default Provider
+
+- User chose yfinance/Yahoo Finance as the default data source to avoid the
+  IB Gateway setup blocker.
+- Added `backend/trading_monitor/yahoo.py`.
+- API now selects the market-data provider from `DATA_PROVIDER`, defaulting to
+  `yfinance`.
+- Added yfinance-specific environment settings:
+  - `YFINANCE_INTRADAY_INTERVAL`
+  - `YFINANCE_DAILY_LOOKBACK_PERIOD`
+- Kept IBKR as an optional provider through `DATA_PROVIDER=ibkr`.
+- Documented yfinance latency/risk tradeoffs in `README.md` and kept alerts
+  protected by stale-data checks.
+
 ### Resume Principle
 
 Before each major implementation phase:

@@ -74,7 +74,15 @@ The app should monitor **regular trading hours only**:
 
 Pre-market and after-hours monitoring are out of scope for the initial version.
 
-Primary data source option:
+Primary Phase I data source:
+
+* Yahoo Finance through `yfinance`
+
+This is used for local development and personal monitoring because it avoids
+broker desktop setup. It should be treated as informational, potentially delayed
+or cached, and not broker-grade market data.
+
+Optional data source:
 
 * Interactive Brokers / IBKR via TWS API or IB Gateway
 
@@ -180,7 +188,7 @@ The GUI should allow the user to:
 * View signal history
 * View Telegram notification history
 * View confidence score explanations
-* View app status, including IBKR connection status and data freshness
+* View app status, including data-provider status and data freshness
 
 For Phase II, the GUI should be accessible over the internet with proper authentication and security controls.
 
@@ -197,9 +205,28 @@ The app should not attempt to:
 
 ## 7. Data Sources
 
-### 7.1 IBKR Market Data
+### 7.1 yfinance / Yahoo Finance Market Data
 
-IBKR can be used as the primary market data source through:
+yfinance is the default Phase I provider.
+
+It can be used for:
+
+* Recent intraday bars
+* Latest observed bar price
+* Daily historical closes
+* ETF and stock monitoring prototypes
+
+Important considerations:
+
+* yfinance is not affiliated with or endorsed by Yahoo.
+* Yahoo data is informational and may be delayed or cached.
+* There is no broker-grade uptime, latency, or accuracy guarantee.
+* Intraday history is limited by Yahoo/yfinance constraints.
+* The app must block alerts when data timestamps become stale.
+
+### 7.2 Optional IBKR Market Data
+
+IBKR can be used as an optional market data source through:
 
 * Trader Workstation, TWS
 * IB Gateway
@@ -513,7 +540,7 @@ Optional later:
 * View current prices and data freshness
 * View signal history
 * View notification history
-* View IBKR connection status
+* View data-provider connection status
 
 ### Milestone 6: Historical Backtest
 
