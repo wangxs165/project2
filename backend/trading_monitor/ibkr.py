@@ -42,6 +42,11 @@ class IbkrMarketDataClient:
             return IbkrConnectionStatus(False, message=str(exc))
         return IbkrConnectionStatus(bool(self._ib.isConnected()), message="connected")
 
+    def disconnect(self) -> None:
+        if self._ib is not None:
+            self._ib.disconnect()
+            self._ib = None
+
     def _require_ib(self):
         if self._ib is None:
             status = self.connect()

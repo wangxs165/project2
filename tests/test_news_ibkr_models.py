@@ -2,6 +2,7 @@ import unittest
 from datetime import datetime, timezone
 
 from backend.trading_monitor.ibkr import IbkrMarketDataClient
+from backend.trading_monitor.ibkr_probe import candidate_ports
 from backend.trading_monitor.models import Bar, NewsContext, PriceUpdate, ValidationError, normalize_symbol
 from backend.trading_monitor.news import Headline, analyze_headlines
 
@@ -64,6 +65,9 @@ class NewsAnalyzerTests(unittest.TestCase):
 
 
 class IbkrAdapterTests(unittest.TestCase):
+    def test_probe_candidate_ports_keeps_configured_port_first(self):
+        self.assertEqual(candidate_ports(7496), [7496, 7497, 4002, 4001])
+
     def test_normalize_tick_creates_price_update(self):
         now = datetime(2026, 5, 1, 16, 0, tzinfo=timezone.utc)
         update = IbkrMarketDataClient.normalize_tick(
@@ -89,4 +93,3 @@ class IbkrAdapterTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
-

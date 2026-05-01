@@ -91,3 +91,5 @@ python3 -m unittest discover -s tests
 - No local listener was detected on common IBKR ports `7496`, `7497`, `4001`,
   or `4002`. Start TWS or IB Gateway with API access enabled before live IBKR
   testing.
+- Added IBKR connectivity probe:
+  `python3 -m backend.trading_monitor.ibkr_probe --symbol VOO`

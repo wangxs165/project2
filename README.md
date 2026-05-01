@@ -58,3 +58,23 @@ curl -X POST http://127.0.0.1:8080/monitoring/stop
 For IBKR live data, TWS or IB Gateway must be running locally and listening on
 the configured API port, usually `7497` for paper TWS or `4002` for paper IB
 Gateway.
+
+## Check IBKR Market Data
+
+Start and log in to TWS or IB Gateway first. In TWS, open Global Configuration,
+then API, then Settings:
+
+- Enable socket clients.
+- Keep connections limited to localhost for this local Phase I app.
+- Verify the socket port, commonly `7497` for paper TWS, `7496` for live TWS,
+  `4002` for paper IB Gateway, or `4001` for live IB Gateway.
+
+Then run:
+
+```bash
+python3 -m backend.trading_monitor.ibkr_probe --symbol VOO
+```
+
+The probe checks common local API ports, connects through the same
+market-data-only adapter used by the app, and requests one market-data sample.
+It does not expose order placement methods.
