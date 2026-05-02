@@ -30,7 +30,7 @@ def make_signal(now, should_alert=True, confidence=80):
         should_alert=should_alert,
         reasons=["Price is below VWAP.", "News context is neutral."],
         market_context_summary="News context is neutral.",
-        score_breakdown=ScoreBreakdown(30, 20, 15, 10, 5),
+        score_breakdown=ScoreBreakdown(20, 15, 15, 10, 10, 10),
         created_at=now,
     )
 
@@ -249,4 +249,3 @@ class EndToEndCoreFlowTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
-

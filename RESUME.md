@@ -114,3 +114,5 @@ python3 -m unittest discover -s tests
   reasons, suggested price, alert status, and score breakdown.
 - Added `POST /monitoring/run-demo` plus a Demo Analysis dashboard button for
   closed-market UI testing with deterministic sample data and no real alerts.
+- Signal scoring now includes momentum recovery, lower-low and aggressive
+  selling-volume blockers, and volatility-adjusted dip quality.

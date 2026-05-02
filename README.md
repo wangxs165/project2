@@ -76,6 +76,16 @@ The dashboard Run Analysis button calls `POST /monitoring/run-once`. It keeps
 signal generation market-hours gated and shows the latest analysis summary,
 signal reasons, suggested price, confidence, and score breakdown.
 
+The signal score now emphasizes whether a dip is stabilizing rather than simply
+being low:
+
+- intraday/VWAP setup
+- momentum recovery
+- historical support/trend context
+- volatility-adjusted dip quality
+- volume confirmation
+- news/macro context
+
 The dashboard Demo Analysis button calls `POST /monitoring/run-demo`. It uses
 deterministic sample market data at an in-hours timestamp so the signal cards
 can be tested while the market is closed. It does not send Telegram alerts.

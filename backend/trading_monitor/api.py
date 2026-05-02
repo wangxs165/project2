@@ -234,7 +234,7 @@ def create_app(
             should_alert=False,
             reasons=["Telegram test notification."],
             market_context_summary="Manual test.",
-            score_breakdown=ScoreBreakdown(0, 0, 0, 0, 0),
+            score_breakdown=ScoreBreakdown(0, 0, 0, 0, 0, 0),
             created_at=datetime.now(timezone.utc),
         )
         client = TelegramClient(app_config.telegram.bot_token, app_config.telegram.chat_id)

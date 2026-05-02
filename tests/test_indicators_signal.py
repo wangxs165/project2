@@ -93,17 +93,17 @@ class SignalEngineTests(unittest.TestCase):
     def test_strong_setup_alerts_with_explanation(self):
         bars = [
             bar(103, volume=900, high=104, low=99, minute=0),
-            bar(102, volume=950, high=104, low=99, minute=1),
-            bar(101, volume=1000, high=104, low=99, minute=2),
-            bar(100, volume=1100, high=104, low=99, minute=3),
-            bar(99.5, volume=1500, high=104, low=99, minute=4),
+            bar(101, volume=1000, high=104, low=99, minute=1),
+            bar(99.2, volume=1300, high=104, low=98.9, minute=2),
+            bar(99.6, volume=1500, high=104, low=99.1, minute=3),
+            bar(100.0, volume=1800, high=104, low=99.3, minute=4),
         ]
         daily = [103, 102, 101, 100.8, 100.5, 100.4, 100.3, 100.2, 100.1, 100] * 3
 
         signal = evaluate_buy_window(
             SignalInput(
                 symbol="voo",
-                current_price=99.5,
+                current_price=100.0,
                 intraday_bars=bars,
                 daily_closes=daily,
                 news_context=NewsContext(summary="News context is neutral."),
@@ -116,6 +116,30 @@ class SignalEngineTests(unittest.TestCase):
         self.assertGreaterEqual(signal.confidence, 75)
         self.assertLessEqual(signal.suggested_buy_price, signal.current_price)
         self.assertTrue(any("VWAP" in reason for reason in signal.reasons))
+
+    def test_falling_below_vwap_without_stabilization_is_blocked(self):
+        bars = [
+            bar(103, volume=900, high=104, low=99, minute=0),
+            bar(102, volume=950, high=104, low=99, minute=1),
+            bar(101, volume=1000, high=104, low=99, minute=2),
+            bar(100, volume=1100, high=104, low=99, minute=3),
+            bar(99.5, volume=1800, high=104, low=98.5, minute=4),
+        ]
+        daily = [101] * 30
+
+        signal = evaluate_buy_window(
+            SignalInput(
+                symbol="VOO",
+                current_price=99.5,
+                intraday_bars=bars,
+                daily_closes=daily,
+                news_context=NewsContext(summary="News context is neutral."),
+                created_at=datetime(2026, 5, 1, 9, 0, tzinfo=PACIFIC),
+            )
+        )
+
+        self.assertFalse(signal.should_alert)
+        self.assertTrue(any("lower lows" in reason for reason in signal.reasons))
 
     def test_stale_closed_open_delay_and_risk_override_block_alerts(self):
         bars = [bar(103), bar(102), bar(101), bar(100), bar(99.5)]

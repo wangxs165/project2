@@ -110,29 +110,32 @@ class NewsContext:
 
 @dataclass(frozen=True)
 class ScoreBreakdown:
-    intraday_discount: float
+    intraday_vwap_setup: float
+    momentum_recovery: float
     historical_setup: float
-    volatility_quality: float
-    news_context: float
+    volatility_adjusted_dip: float
     volume_confirmation: float
+    news_context: float
 
     @property
     def total(self) -> float:
         return (
-            self.intraday_discount
+            self.intraday_vwap_setup
+            + self.momentum_recovery
             + self.historical_setup
-            + self.volatility_quality
-            + self.news_context
+            + self.volatility_adjusted_dip
             + self.volume_confirmation
+            + self.news_context
         )
 
     def as_dict(self) -> Dict[str, float]:
         return {
-            "intraday_discount": self.intraday_discount,
+            "intraday_vwap_setup": self.intraday_vwap_setup,
+            "momentum_recovery": self.momentum_recovery,
             "historical_setup": self.historical_setup,
-            "volatility_quality": self.volatility_quality,
-            "news_context": self.news_context,
+            "volatility_adjusted_dip": self.volatility_adjusted_dip,
             "volume_confirmation": self.volume_confirmation,
+            "news_context": self.news_context,
         }
 
 
@@ -182,4 +185,3 @@ class NotificationRecord:
             raise ValidationError("notification status must be sent, failed, or blocked")
         if self.confidence is not None and not 0 <= self.confidence <= 100:
             raise ValidationError("confidence must be between 0 and 100")
-

@@ -34,7 +34,8 @@ class DemoMarketDataProvider:
             baseline * 0.981,
             baseline * 0.975,
             baseline * 0.973,
-            baseline * 0.972,
+            baseline * 0.976,
+            baseline * 0.979,
         ]
         bars = []
         for index, close in enumerate(closes):

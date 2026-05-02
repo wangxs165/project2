@@ -59,7 +59,7 @@ def calculate_suggested_buy_price(
     return floor(min(candidates) * scale) / scale
 
 
-def _intraday_component(current_price: float, bars: Sequence[Bar]) -> float:
+def _intraday_vwap_component(current_price: float, bars: Sequence[Bar]) -> float:
     percentile = range_percentile(current_price, bars)
     vwap_value = vwap(bars)
     if percentile is None and vwap_value is None:
@@ -73,7 +73,31 @@ def _intraday_component(current_price: float, bars: Sequence[Bar]) -> float:
     if vwap_value is not None:
         vwap_quality = clamp((vwap_value - current_price) / (vwap_value * 0.01), 0.0, 1.0)
 
-    return 30.0 * ((0.6 * range_quality) + (0.4 * vwap_quality))
+    return 25.0 * ((0.55 * range_quality) + (0.45 * vwap_quality))
+
+
+def _momentum_recovery_component(bars: Sequence[Bar]) -> float:
+    if len(bars) < 4:
+        return 0.0
+    closes = [bar.close for bar in bars]
+    recent = closes[-4:]
+    prior_low = min(recent[:-1])
+    latest = recent[-1]
+    previous = recent[-2]
+
+    lower_low_penalty = 0.0 if latest < prior_low else 0.35
+    uptick_quality = 0.35 if latest >= previous else 0.0
+    higher_low_quality = 0.20 if bars[-1].low >= min(bar.low for bar in bars[-4:-1]) else 0.0
+
+    current_rsi = rsi(closes, period=min(14, max(2, len(closes) - 1)))
+    rsi_quality = 0.10
+    if current_rsi is not None:
+        if 30 <= current_rsi <= 55:
+            rsi_quality = 0.25
+        elif current_rsi < 30:
+            rsi_quality = 0.15
+
+    return 20.0 * clamp(lower_low_penalty + uptick_quality + higher_low_quality + rsi_quality, 0.0, 1.0)
 
 
 def _historical_component(current_price: float, daily_closes: Sequence[float]) -> float:
@@ -91,26 +115,28 @@ def _historical_component(current_price: float, daily_closes: Sequence[float]) -
     if support:
         support_quality = clamp((support * 1.015 - current_price) / (support * 0.02), 0.0, 1.0)
         setup += 0.40 * support_quality
-    return 25.0 * clamp(setup, 0.0, 1.0)
+    return 20.0 * clamp(setup, 0.0, 1.0)
 
 
 def _volatility_component(current_price: float, bars: Sequence[Bar], daily_closes: Sequence[float]) -> float:
     percentile = range_percentile(current_price, bars)
     if percentile is None:
         return 0.0
-    vol = realized_volatility(daily_closes)
-    if vol is None:
+    daily_range = _average_absolute_move(daily_closes)
+    if daily_range is None or daily_range <= 0:
         vol_quality = 0.5
     else:
-        vol_quality = clamp(vol / 0.02, 0.0, 1.0)
+        high_low = max(bar.high for bar in bars), min(bar.low for bar in bars)
+        dip_from_high = high_low[0] - current_price
+        vol_quality = clamp(dip_from_high / daily_range, 0.0, 1.0)
     dip_quality = clamp((0.45 - percentile) / 0.45, 0.0, 1.0)
-    return 20.0 * ((0.7 * dip_quality) + (0.3 * vol_quality))
+    return 15.0 * ((0.6 * dip_quality) + (0.4 * vol_quality))
 
 
 def _news_component(news_context: NewsContext) -> float:
     if news_context.risk_override:
         return 0.0
-    return clamp(10.0 + news_context.score_modifier, 0.0, 15.0)
+    return clamp(7.0 + news_context.score_modifier, 0.0, 10.0)
 
 
 def _volume_component(bars: Sequence[Bar]) -> float:
@@ -120,7 +146,39 @@ def _volume_component(bars: Sequence[Bar]) -> float:
     median = median_recent_volume(bars)
     if median is None:
         return 4.0
-    return 10.0 * clamp(latest / median, 0.0, 1.0)
+    volume_quality = clamp(latest / median, 0.0, 1.0)
+    if len(bars) >= 2 and bars[-1].close < bars[-2].close and latest > median * 1.2:
+        volume_quality *= 0.35
+    return 10.0 * volume_quality
+
+
+def _average_absolute_move(values: Sequence[float], lookback: int = 20) -> Optional[float]:
+    recent = [value for value in values[-lookback:] if value > 0]
+    if len(recent) < 2:
+        return None
+    moves = [abs(current - previous) for previous, current in zip(recent, recent[1:])]
+    if not moves:
+        return None
+    return sum(moves) / len(moves)
+
+
+def _making_lower_lows(bars: Sequence[Bar]) -> bool:
+    if len(bars) < 4:
+        return False
+    lows = [bar.low for bar in bars[-4:]]
+    closes = [bar.close for bar in bars[-4:]]
+    return lows[-1] < min(lows[:-1]) and closes[-1] < closes[-2]
+
+
+def _aggressive_selling_volume(bars: Sequence[Bar]) -> bool:
+    if len(bars) < 3:
+        return False
+    median = median_recent_volume(bars)
+    if median is None:
+        return False
+    latest = bars[-1]
+    previous = bars[-2]
+    return latest.close < previous.close and latest.volume > median * 1.4
 
 
 def evaluate_buy_window(signal_input: SignalInput) -> SignalDecision:
@@ -133,11 +191,12 @@ def evaluate_buy_window(signal_input: SignalInput) -> SignalDecision:
     support_price = support_level(daily_closes, 20)
 
     breakdown = ScoreBreakdown(
-        intraday_discount=round(_intraday_component(current_price, bars), 2),
+        intraday_vwap_setup=round(_intraday_vwap_component(current_price, bars), 2),
+        momentum_recovery=round(_momentum_recovery_component(bars), 2),
         historical_setup=round(_historical_component(current_price, daily_closes), 2),
-        volatility_quality=round(_volatility_component(current_price, bars, daily_closes), 2),
-        news_context=round(_news_component(signal_input.news_context), 2),
+        volatility_adjusted_dip=round(_volatility_component(current_price, bars, daily_closes), 2),
         volume_confirmation=round(_volume_component(bars), 2),
+        news_context=round(_news_component(signal_input.news_context), 2),
     )
     confidence = int(round(clamp(breakdown.total, 0.0, 100.0)))
     reasons: List[str] = []
@@ -165,6 +224,10 @@ def evaluate_buy_window(signal_input: SignalInput) -> SignalDecision:
         blockers.append("Inside configured post-open waiting window.")
     if signal_input.news_context.risk_override:
         blockers.append("Major risk news override is active.")
+    if _making_lower_lows(bars):
+        blockers.append("Price is still making lower lows.")
+    if _aggressive_selling_volume(bars):
+        blockers.append("Volume confirms aggressive selling.")
 
     suggested_price = calculate_suggested_buy_price(current_price, vwap_value, support_price)
     should_alert = confidence >= signal_input.min_confidence and not blockers

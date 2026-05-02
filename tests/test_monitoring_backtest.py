@@ -75,10 +75,10 @@ class MonitoringServiceTests(unittest.TestCase):
         self.config = AppConfig(symbols=("VOO",), db_path=Path(self.tempdir.name) / "monitor.sqlite")
         self.bars = [
             make_bar(103, 0, volume=900),
-            make_bar(102, 1, volume=950),
-            make_bar(101, 2, volume=1000),
-            make_bar(100, 3, volume=1100),
-            make_bar(99.5, 4, volume=1500),
+            make_bar(101, 1, volume=1000),
+            make_bar(99.2, 2, volume=1300),
+            make_bar(99.6, 3, volume=1500),
+            make_bar(100.0, 4, volume=1800),
         ]
         self.daily = [103, 102, 101, 100.8, 100.5, 100.4, 100.3, 100.2, 100.1, 100] * 3
 

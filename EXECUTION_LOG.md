@@ -353,6 +353,19 @@ VOO 662.510009765625 2026-05-01T15:59:00-04:00 yfinance
 - Fixed suggested-price rounding so cent rounding never pushes the suggested
   price above the current price.
 
+### Checkpoint 16: Refined Signal Criteria
+
+- Revised signal weights:
+  - intraday/VWAP setup
+  - momentum recovery
+  - historical setup
+  - volatility-adjusted dip quality
+  - volume confirmation
+  - news context
+- Added blockers for continuing lower lows and aggressive selling volume.
+- Changed the strong setup expectation to require stabilization after a dip,
+  instead of rewarding a still-falling price below VWAP.
+
 ### Resume Principle
 
 Before each major implementation phase:
