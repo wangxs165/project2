@@ -71,6 +71,7 @@ curl 'http://127.0.0.1:8080/history/bars/VOO?kind=daily&limit=10'
 curl -X POST http://127.0.0.1:8080/monitoring/run-once
 curl -X POST http://127.0.0.1:8080/monitoring/run-demo
 curl 'http://127.0.0.1:8080/backtest/daily?symbol=VOO&days=90'
+curl 'http://127.0.0.1:8080/backtest/stored-intraday?symbol=VOO'
 curl -X POST http://127.0.0.1:8080/monitoring/start
 curl -X POST http://127.0.0.1:8080/monitoring/stop
 ```
@@ -116,6 +117,10 @@ The dashboard Backtest panel calls `GET /backtest/daily`. This first backtest
 uses daily OHLC bars to synthesize intraday paths and compare signal entries
 against open, noon, close, and random baselines. It is a rough validation tool,
 not execution-grade proof.
+
+The backtest output includes signal rate, false-signal rate, and threshold
+sensitivity. The dashboard can also call `GET /backtest/stored-intraday` to
+test against intraday bars already stored in SQLite.
 
 Useful provider settings:
 

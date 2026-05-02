@@ -1,6 +1,6 @@
 # Resume Checkpoint
 
-Last updated: 2026-05-01
+Last updated: 2026-05-02
 
 ## Current Goal
 
@@ -47,25 +47,25 @@ python3 -m unittest discover -s tests
 - [x] Run the test suite.
 - [x] Add local API/dashboard scaffold.
 - [x] Record passing/failing tests and next steps here.
-- [ ] Install optional API and yfinance dependencies when internet access is available:
-  `python3 -m pip install -e ".[api,yfinance]"`
-- [ ] Run FastAPI integration tests after dependency installation:
-  `python3 -m unittest tests.test_api_optional`
+- [x] Install optional API and yfinance dependencies.
+- [x] Run FastAPI integration tests after dependency installation.
 - [x] Add one-command local launcher for API/dashboard:
   `./scripts/start_app.sh`
 - [x] Implement provider-driven monitoring cycle.
 - [x] Implement deterministic historical backtesting runner.
 - [x] Wire monitoring service into API start/stop lifecycle.
-- [ ] Test yfinance provider against live Yahoo Finance responses.
+- [x] Test yfinance provider against live Yahoo Finance responses.
 - [ ] Keep real IBKR market-data provider optional for local TWS or IB Gateway.
 - [x] Add historical-bar ingestion storage APIs beyond the current provider calls.
+- [ ] Configure Telegram environment and run live Telegram smoke test.
 - [ ] Add live/manual smoke-test checklist results for IBKR and Telegram.
 
 ## Known Environment Notes
 
-- Python version observed: 3.9.6
-- `pytest` is not installed.
-- The directory is not currently a git repository.
+- Python version observed: 3.9.6 for system Python; `.venv` uses the project
+  runtime with FastAPI, uvicorn, pytest, httpx, yfinance, and ib_insync.
+- The directory is a git repository with GitHub remote
+  `git@github.com:wangxs165/project2.git`.
 - Keep the app local-only by default: `127.0.0.1:8080`.
 - Default test result on 2026-05-01:
   `59 tests OK, 1 skipped because FastAPI is not installed`.
@@ -88,9 +88,9 @@ python3 -m unittest discover -s tests
   - `POST /monitoring/start`
   - `POST /monitoring/stop`
 - Current venv test result:
-  `.venv/bin/python -m pytest -q` -> `66 passed, 1 skipped`.
+  `.venv/bin/python -m pytest -q` -> `74 passed, 1 skipped`.
 - Current unittest result:
-  `python3 -m unittest discover -s tests` -> `67 tests OK, 1 skipped`.
+  `python3 -m unittest discover -s tests` -> `75 tests OK, 1 skipped`.
 - `ib_insync` is installed: `0.9.86`.
 - No local listener was detected on common IBKR ports `7496`, `7497`, `4001`,
   or `4002`. Start TWS or IB Gateway with API access enabled before live IBKR
@@ -125,3 +125,11 @@ python3 -m unittest discover -s tests
 - Added historical bar storage/read APIs:
   - `POST /history/refresh`
   - `GET /history/bars/{symbol}`
+- Live yfinance smoke test on 2026-05-02 returned VOO and IAU latest bars from
+  the 2026-05-01 market close, with 390 intraday bars and 5 daily bars for each.
+- Telegram live smoke test is blocked until `TELEGRAM_BOT_TOKEN` and
+  `TELEGRAM_CHAT_ID` are configured in the environment.
+- Dashboard now includes stored-history controls and a stored-intraday backtest
+  action.
+- Backtest output now includes signal rate, false-signal count/rate, and daily
+  OHLC threshold sensitivity.

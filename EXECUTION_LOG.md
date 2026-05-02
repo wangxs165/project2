@@ -393,6 +393,22 @@ VOO 662.510009765625 2026-05-01T15:59:00-04:00 yfinance
 - Added `GET /history/bars/{symbol}` to inspect stored bars from SQLite.
 - Added storage and FastAPI integration test coverage for the new behavior.
 
+### Checkpoint 20: MVP Smoke Tests and Backtest Refinement
+
+- Cleaned stale setup notes from `RESUME.md`.
+- Live yfinance smoke test succeeded for VOO and IAU on 2026-05-02:
+  - latest observed bar timestamp: 2026-05-01 15:59:00 Eastern
+  - VOO: 390 intraday bars, 5 daily bars
+  - IAU: 390 intraday bars, 5 daily bars
+- Telegram live smoke test could not be sent because `TELEGRAM_BOT_TOKEN` and
+  `TELEGRAM_CHAT_ID` are not configured in the environment.
+- Dashboard now includes controls to refresh daily/intraday stored history and
+  inspect stored daily bars.
+- Backtest output now includes signal rate, false-signal count/rate, and daily
+  OHLC threshold sensitivity.
+- Added `GET /backtest/stored-intraday` for backtesting against intraday bars
+  already stored in SQLite.
+
 ### Resume Principle
 
 Before each major implementation phase:

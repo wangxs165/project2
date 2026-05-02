@@ -6,7 +6,9 @@ from zoneinfo import ZoneInfo
 
 from backend.trading_monitor.backtest import (
     run_daily_ohlc_backtest,
+    run_daily_ohlc_threshold_sensitivity,
     run_intraday_backtest,
+    run_threshold_sensitivity,
     synthesize_intraday_sessions_from_daily_bars,
 )
 from backend.trading_monitor.config import AppConfig
@@ -184,6 +186,8 @@ class BacktestTests(unittest.TestCase):
 
         self.assertEqual(result.days_tested, 1)
         self.assertEqual(result.signal_days, 1)
+        self.assertEqual(result.signal_rate, 1.0)
+        self.assertEqual(result.false_signal_days, 0)
         self.assertIsNotNone(result.average_signal_price)
         self.assertIn("open", result.baseline_deltas())
 
@@ -213,6 +217,7 @@ class BacktestTests(unittest.TestCase):
         result = run_intraday_backtest("VOO", sessions, [100] * 30, threshold=90)
 
         self.assertEqual(result.signal_days, 0)
+        self.assertEqual(result.false_signal_rate, 0.0)
         self.assertIsNone(result.average_signal_price)
         self.assertEqual(result.baseline_deltas()["open"], None)
 
@@ -256,6 +261,28 @@ class BacktestTests(unittest.TestCase):
 
         self.assertEqual(result.days_tested, 15)
         self.assertIn("open", result.baseline_deltas())
+
+    def test_threshold_sensitivity_returns_result_per_threshold(self):
+        sessions = {
+            date(2026, 5, 1): [
+                make_bar(103, 0),
+                make_bar(102, 1),
+                make_bar(101, 2),
+                make_bar(100, 3),
+                make_bar(99.5, 4),
+            ]
+        }
+
+        results = run_threshold_sensitivity("VOO", sessions, [101] * 30, thresholds=[65, 75, 85])
+
+        self.assertEqual([result.threshold for result in results], [65, 75, 85])
+        self.assertTrue(all(result.days_tested == 1 for result in results))
+
+    def test_daily_threshold_sensitivity_handles_short_history(self):
+        results = run_daily_ohlc_threshold_sensitivity("VOO", [], thresholds=[70, 80])
+
+        self.assertEqual([result.threshold for result in results], [70, 80])
+        self.assertTrue(all(result.days_tested == 0 for result in results))
 
 
 if __name__ == "__main__":

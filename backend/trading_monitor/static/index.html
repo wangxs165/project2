@@ -361,6 +361,22 @@
         <div id="history" class="panel-body"></div>
       </section>
 
+      <section class="span-2">
+        <div class="panel-head">
+          <h2>Stored History</h2>
+          <span id="stored-history-summary" class="muted">No stored history loaded.</span>
+        </div>
+        <div class="panel-body">
+          <div class="row" style="margin-bottom: 12px">
+            <input id="history-symbol" maxlength="10" placeholder="SYMBOL" value="VOO" />
+            <button id="refresh-daily-history" class="secondary">Refresh Daily</button>
+            <button id="refresh-intraday-history" class="secondary">Refresh Intraday</button>
+            <button id="view-stored-history" class="secondary">View Stored</button>
+          </div>
+          <div id="stored-history" class="empty">Refresh or view stored bars.</div>
+        </div>
+      </section>
+
       <section>
         <div class="panel-head">
           <h2>Signals</h2>
@@ -378,6 +394,7 @@
           <div class="row" style="margin-bottom: 12px">
             <input id="backtest-symbol" maxlength="10" placeholder="SYMBOL" value="VOO" />
             <button id="run-backtest" class="secondary">Run Backtest</button>
+            <button id="run-stored-backtest" class="secondary">Stored Intraday</button>
           </div>
           <div id="backtest" class="empty">No backtest run yet.</div>
         </div>
@@ -538,6 +555,43 @@
         `;
       }
 
+      function storedHistoryView(result) {
+        const bars = result.bars || [];
+        if (!bars.length) {
+          return `<div class="empty">No stored ${result.kind} bars for ${result.symbol}.</div>`;
+        }
+        return `
+          <table>
+            <thead>
+              <tr>
+                <th>Time</th>
+                <th class="num">Open</th>
+                <th class="num">High</th>
+                <th class="num">Low</th>
+                <th class="num">Close</th>
+                <th class="num">Volume</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${bars
+                .map(
+                  (bar) => `
+                    <tr>
+                      <td>${shortTime(bar.timestamp)}</td>
+                      <td class="num">${money(bar.open)}</td>
+                      <td class="num">${money(bar.high)}</td>
+                      <td class="num">${money(bar.low)}</td>
+                      <td class="num">${money(bar.close)}</td>
+                      <td class="num">${number(bar.volume)}</td>
+                    </tr>
+                  `
+                )
+                .join("")}
+            </tbody>
+          </table>
+        `;
+      }
+
       function compactList(items, emptyText, renderer) {
         if (!items || !items.length) return `<div class="empty">${emptyText}</div>`;
         return `
@@ -629,11 +683,25 @@
       function backtestView(result) {
         const deltas = result.deltas || {};
         const averages = result.averages || {};
+        const sensitivity = result.threshold_sensitivity || [];
         return `
           <div class="stack">
             <div class="row">
               <span class="badge">${result.symbol}</span>
-              <span class="muted">${result.days_tested} days tested, ${result.signal_days} signal days</span>
+              <span class="muted">
+                ${result.days_tested} days tested, ${result.signal_days} signal days,
+                ${Math.round((result.signal_rate || 0) * 100)}% signal rate
+              </span>
+            </div>
+            <div class="score-grid">
+              <div class="score-item">
+                <span>False signal days</span>
+                <strong>${result.false_signal_days ?? 0}</strong>
+              </div>
+              <div class="score-item">
+                <span>False signal rate</span>
+                <strong>${Math.round((result.false_signal_rate || 0) * 100)}%</strong>
+              </div>
             </div>
             <table>
               <thead>
@@ -664,6 +732,34 @@
                   .join("")}
               </tbody>
             </table>
+            ${
+              sensitivity.length
+                ? `<table>
+                    <thead>
+                      <tr>
+                        <th>Threshold</th>
+                        <th class="num">Signal Days</th>
+                        <th class="num">False Signals</th>
+                        <th class="num">Delta vs Open</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      ${sensitivity
+                        .map(
+                          (row) => `
+                            <tr>
+                              <td>${row.threshold}</td>
+                              <td class="num">${row.signal_days}</td>
+                              <td class="num">${row.false_signal_days}</td>
+                              <td class="num">${money(row.deltas.open)}</td>
+                            </tr>
+                          `
+                        )
+                        .join("")}
+                    </tbody>
+                  </table>`
+                : ""
+            }
             <div class="muted">${result.warning}</div>
           </div>
         `;
@@ -778,6 +874,40 @@
           const result = await json(`/backtest/daily?symbol=${encodeURIComponent(symbol)}&days=90`);
           document.getElementById("backtest").className = "panel-body";
           document.getElementById("backtest").innerHTML = backtestView(result);
+        });
+      });
+      document.getElementById("run-stored-backtest").addEventListener("click", async (event) => {
+        await runWithDisabled(event.currentTarget, async () => {
+          const input = document.getElementById("backtest-symbol");
+          const symbol = input.value.trim().toUpperCase() || "VOO";
+          input.value = symbol;
+          const result = await json(`/backtest/stored-intraday?symbol=${encodeURIComponent(symbol)}`);
+          document.getElementById("backtest").className = "panel-body";
+          document.getElementById("backtest").innerHTML = backtestView(result);
+        });
+      });
+      document.getElementById("refresh-daily-history").addEventListener("click", async (event) => {
+        await runWithDisabled(event.currentTarget, async () => {
+          const result = await json("/history/refresh?kind=daily&days=90", { method: "POST" });
+          document.getElementById("stored-history-summary").textContent = `${Object.keys(result.refreshed).length} symbols refreshed`;
+          await refresh();
+        });
+      });
+      document.getElementById("refresh-intraday-history").addEventListener("click", async (event) => {
+        await runWithDisabled(event.currentTarget, async () => {
+          const result = await json("/history/refresh?kind=intraday", { method: "POST" });
+          document.getElementById("stored-history-summary").textContent = `${Object.keys(result.refreshed).length} symbols refreshed`;
+        });
+      });
+      document.getElementById("view-stored-history").addEventListener("click", async (event) => {
+        await runWithDisabled(event.currentTarget, async () => {
+          const input = document.getElementById("history-symbol");
+          const symbol = input.value.trim().toUpperCase() || "VOO";
+          input.value = symbol;
+          const result = await json(`/history/bars/${encodeURIComponent(symbol)}?kind=daily&limit=10`);
+          document.getElementById("stored-history-summary").textContent = `${result.bars.length} stored ${result.kind} bars for ${result.symbol}`;
+          document.getElementById("stored-history").className = "panel-body";
+          document.getElementById("stored-history").innerHTML = storedHistoryView(result);
         });
       });
       document.getElementById("add-symbol").addEventListener("click", async () => {

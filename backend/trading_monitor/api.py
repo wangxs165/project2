@@ -5,17 +5,80 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Dict, Optional
 
-from .backtest import run_daily_ohlc_backtest
+from .backtest import (
+    BacktestResult,
+    run_daily_ohlc_backtest,
+    run_daily_ohlc_threshold_sensitivity,
+    run_intraday_backtest,
+)
 from .config import AppConfig, load_config
 from .demo import DemoMarketDataProvider, demo_market_time
 from .ibkr import IbkrMarketDataClient
 from .monitoring import MonitoringService, NeutralNewsProvider
-from .models import DISCLAIMER, NotificationRecord, ScoreBreakdown, SignalDecision, normalize_symbol
+from .models import Bar, DISCLAIMER, NotificationRecord, ScoreBreakdown, SignalDecision, normalize_symbol
 from .runtime import BackgroundMonitoringRunner, MonitoringRuntime
 from .signal_engine import SignalInput, evaluate_buy_window
 from .storage import Storage
 from .telegram import TelegramClient
 from .yahoo import YFinanceMarketDataClient
+
+
+def _backtest_summary(result: BacktestResult) -> Dict[str, object]:
+    return {
+        "threshold": result.threshold,
+        "days_tested": result.days_tested,
+        "signal_days": result.signal_days,
+        "signal_rate": result.signal_rate,
+        "false_signal_days": result.false_signal_days,
+        "false_signal_rate": result.false_signal_rate,
+        "average_signal_price": result.average_signal_price,
+        "deltas": result.baseline_deltas(),
+    }
+
+
+def _backtest_payload(result: BacktestResult) -> Dict[str, object]:
+    return {
+        "days_tested": result.days_tested,
+        "signal_days": result.signal_days,
+        "signal_rate": result.signal_rate,
+        "false_signal_days": result.false_signal_days,
+        "false_signal_rate": result.false_signal_rate,
+        "threshold": result.threshold,
+        "averages": {
+            "signal": result.average_signal_price,
+            "open": result.average_open_price,
+            "noon": result.average_noon_price,
+            "close": result.average_close_price,
+            "random": result.average_random_price,
+        },
+        "deltas": result.baseline_deltas(),
+        "day_results": [
+            {
+                "date": day.day.isoformat(),
+                "signal_price": day.signal_price,
+                "signal_confidence": day.signal_confidence,
+                "open_price": day.open_price,
+                "noon_price": day.noon_price,
+                "close_price": day.close_price,
+                "random_price": day.random_price,
+            }
+            for day in result.day_results
+        ],
+    }
+
+
+def _bar_from_row(row: Dict[str, object]) -> Bar:
+    return Bar(
+        symbol=str(row["symbol"]),
+        timestamp=datetime.fromisoformat(str(row["timestamp"])),
+        open=float(row["open"]),
+        high=float(row["high"]),
+        low=float(row["low"]),
+        close=float(row["close"]),
+        volume=float(row["volume"]),
+        kind=str(row["kind"]),
+        source=str(row["source"]),
+    )
 
 
 def create_app(
@@ -276,6 +339,7 @@ def create_app(
             daily_bars=bars,
             threshold=bounded_threshold,
         )
+        sensitivity = run_daily_ohlc_threshold_sensitivity(normalized, bars)
         return {
             "symbol": result.symbol,
             "method": "synthetic_daily_ohlc",
@@ -284,29 +348,59 @@ def create_app(
                 "Use for rough validation only, not execution-grade proof."
             ),
             "days_requested": bounded_days,
-            "days_tested": result.days_tested,
-            "signal_days": result.signal_days,
-            "threshold": result.threshold,
-            "averages": {
-                "signal": result.average_signal_price,
-                "open": result.average_open_price,
-                "noon": result.average_noon_price,
-                "close": result.average_close_price,
-                "random": result.average_random_price,
-            },
-            "deltas": result.baseline_deltas(),
-            "day_results": [
-                {
-                    "date": day.day.isoformat(),
-                    "signal_price": day.signal_price,
-                    "signal_confidence": day.signal_confidence,
-                    "open_price": day.open_price,
-                    "noon_price": day.noon_price,
-                    "close_price": day.close_price,
-                    "random_price": day.random_price,
-                }
-                for day in result.day_results
-            ],
+            **_backtest_payload(result),
+            "threshold_sensitivity": [_backtest_summary(item) for item in sensitivity],
+        }
+
+    @app.get("/backtest/stored-intraday")
+    def stored_intraday_backtest(symbol: str, threshold: int = 75):
+        normalized = normalize_symbol(symbol)
+        bounded_threshold = max(0, min(threshold, 100))
+        intraday_rows = app_storage.list_bars(normalized, kind="intraday", limit=1000)
+        empty_result = BacktestResult(
+            symbol=normalized,
+            days_tested=0,
+            signal_days=0,
+            false_signal_days=0,
+            threshold=bounded_threshold,
+            average_signal_price=None,
+            average_open_price=0.0,
+            average_noon_price=0.0,
+            average_close_price=0.0,
+            average_random_price=0.0,
+            day_results=[],
+        )
+        if not intraday_rows:
+            return {
+                "symbol": normalized,
+                "method": "stored_intraday",
+                "warning": "No stored intraday bars found. Run /history/refresh?kind=intraday first.",
+                **_backtest_payload(empty_result),
+                "threshold_sensitivity": [],
+            }
+
+        sessions = {}
+        for row in intraday_rows:
+            bar = _bar_from_row(row)
+            sessions.setdefault(bar.timestamp.date(), []).append(bar)
+
+        daily_rows = app_storage.list_bars(normalized, kind="daily", limit=250)
+        historical_daily_closes = [
+            bar.close
+            for bar in sorted((_bar_from_row(row) for row in daily_rows), key=lambda item: item.timestamp)
+        ]
+        result = run_intraday_backtest(
+            normalized,
+            sessions,
+            historical_daily_closes=historical_daily_closes,
+            threshold=bounded_threshold,
+        )
+        return {
+            "symbol": normalized,
+            "method": "stored_intraday",
+            "warning": "Uses intraday bars already stored in SQLite.",
+            **_backtest_payload(result),
+            "threshold_sensitivity": [],
         }
 
     @app.post("/notifications/test")

@@ -25,6 +25,7 @@ class BacktestResult:
     symbol: str
     days_tested: int
     signal_days: int
+    false_signal_days: int
     threshold: int
     average_signal_price: Optional[float]
     average_open_price: float
@@ -42,6 +43,18 @@ class BacktestResult:
             "close": self.average_close_price - self.average_signal_price,
             "random": self.average_random_price - self.average_signal_price,
         }
+
+    @property
+    def signal_rate(self) -> float:
+        if self.days_tested == 0:
+            return 0.0
+        return self.signal_days / self.days_tested
+
+    @property
+    def false_signal_rate(self) -> float:
+        if self.signal_days == 0:
+            return 0.0
+        return self.false_signal_days / self.signal_days
 
 
 def _average(values: Sequence[float]) -> Optional[float]:
@@ -65,6 +78,7 @@ def run_intraday_backtest(
     rng = random.Random(random_seed)
     day_results = []
     signal_prices = []
+    false_signal_days = 0
     open_prices = []
     noon_prices = []
     close_prices = []
@@ -76,6 +90,7 @@ def run_intraday_backtest(
         if not bars:
             continue
 
+        bars = sorted(bars, key=lambda bar: bar.timestamp)
         first_bar = bars[0]
         noon_bar = _nearest_noon_bar(bars)
         last_bar = bars[-1]
@@ -104,6 +119,8 @@ def run_intraday_backtest(
                 signal_price = signal.current_price
                 signal_confidence = signal.confidence
                 signal_prices.append(signal.current_price)
+                if signal.current_price > last_bar.close:
+                    false_signal_days += 1
                 break
 
         open_prices.append(first_bar.open)
@@ -127,6 +144,7 @@ def run_intraday_backtest(
         symbol=symbol,
         days_tested=len(day_results),
         signal_days=len(signal_prices),
+        false_signal_days=false_signal_days,
         threshold=threshold,
         average_signal_price=_average(signal_prices),
         average_open_price=_average(open_prices) or 0.0,
@@ -190,6 +208,7 @@ def run_daily_ohlc_backtest(
             symbol=symbol,
             days_tested=0,
             signal_days=0,
+            false_signal_days=0,
             threshold=threshold,
             average_signal_price=None,
             average_open_price=0.0,
@@ -207,6 +226,61 @@ def run_daily_ohlc_backtest(
         sessions=sessions,
         historical_daily_closes=historical,
         threshold=threshold,
+        random_seed=random_seed,
+    )
+
+
+def run_threshold_sensitivity(
+    symbol: str,
+    sessions: Mapping[date, Sequence[Bar]],
+    historical_daily_closes: Sequence[float],
+    thresholds: Sequence[int] = (65, 70, 75, 80, 85),
+    random_seed: int = 7,
+) -> Sequence[BacktestResult]:
+    return [
+        run_intraday_backtest(
+            symbol=symbol,
+            sessions=sessions,
+            historical_daily_closes=historical_daily_closes,
+            threshold=threshold,
+            random_seed=random_seed,
+        )
+        for threshold in thresholds
+    ]
+
+
+def run_daily_ohlc_threshold_sensitivity(
+    symbol: str,
+    daily_bars: Sequence[Bar],
+    thresholds: Sequence[int] = (65, 70, 75, 80, 85),
+    random_seed: int = 7,
+) -> Sequence[BacktestResult]:
+    ordered = sorted(daily_bars, key=lambda bar: bar.timestamp)
+    if len(ordered) < 25:
+        return [
+            BacktestResult(
+                symbol=symbol,
+                days_tested=0,
+                signal_days=0,
+                false_signal_days=0,
+                threshold=threshold,
+                average_signal_price=None,
+                average_open_price=0.0,
+                average_noon_price=0.0,
+                average_close_price=0.0,
+                average_random_price=0.0,
+                day_results=[],
+            )
+            for threshold in thresholds
+        ]
+
+    historical = [bar.close for bar in ordered[:20]]
+    sessions = synthesize_intraday_sessions_from_daily_bars(ordered[20:])
+    return run_threshold_sensitivity(
+        symbol=symbol,
+        sessions=sessions,
+        historical_daily_closes=historical,
+        thresholds=thresholds,
         random_seed=random_seed,
     )
 

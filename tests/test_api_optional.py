@@ -159,6 +159,13 @@ class ApiIntegrationTests(unittest.TestCase):
             self.assertEqual(backtest.json()["symbol"], "VOO")
             self.assertEqual(backtest.json()["method"], "synthetic_daily_ohlc")
             self.assertIn("open", backtest.json()["deltas"])
+            self.assertIn("signal_rate", backtest.json())
+            self.assertIn("false_signal_days", backtest.json())
+            self.assertGreaterEqual(len(backtest.json()["threshold_sensitivity"]), 1)
+
+            stored_backtest = client.get("/backtest/stored-intraday?symbol=VOO")
+            self.assertEqual(stored_backtest.status_code, 200)
+            self.assertEqual(stored_backtest.json()["method"], "stored_intraday")
 
             stopped = client.post("/monitoring/stop")
             self.assertFalse(stopped.json()["monitoring"])
