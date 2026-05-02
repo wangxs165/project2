@@ -193,6 +193,27 @@
         font-size: 12px;
         font-weight: 600;
       }
+      .help-icon {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 16px;
+        height: 16px;
+        margin-left: 4px;
+        border: 1px solid var(--line);
+        border-radius: 50%;
+        color: var(--muted);
+        background: white;
+        font-size: 11px;
+        font-weight: 700;
+        cursor: help;
+        vertical-align: middle;
+      }
+      .label-with-help {
+        display: inline-flex;
+        align-items: center;
+        gap: 2px;
+      }
       .status-ok {
         color: var(--ok);
       }
@@ -281,6 +302,12 @@
         color: var(--muted);
         font-size: 12px;
       }
+      .score-item .label-with-help {
+        display: inline-flex;
+      }
+      .score-item .help-icon {
+        display: inline-flex;
+      }
       .score-item strong {
         font-size: 14px;
       }
@@ -314,11 +341,11 @@
         <div class="muted">Monitoring suggestion only. This app does not place trades.</div>
       </div>
       <div class="toolbar">
-        <button id="refresh-prices">Refresh Prices</button>
-        <button id="run-analysis" class="secondary">Run Analysis</button>
-        <button id="run-demo" class="secondary">Demo Analysis</button>
-        <button id="start" class="secondary">Start Monitor</button>
-        <button id="stop" class="secondary">Stop</button>
+        <button id="refresh-prices" title="Fetch the latest available prices from yfinance and save them. This can be used while the market is closed.">Refresh Prices</button>
+        <button id="run-analysis" class="secondary" title="Evaluate the current watchlist once. It only creates real signals during regular market hours.">Run Analysis</button>
+        <button id="run-demo" class="secondary" title="Create sample signals from fake market data so you can test the dashboard while the market is closed.">Demo Analysis</button>
+        <button id="start" class="secondary" title="Start automatic monitoring. The app checks the watchlist on a schedule during regular market hours.">Start Monitor</button>
+        <button id="stop" class="secondary" title="Stop automatic monitoring. This does not change saved prices, signals, or notifications.">Stop</button>
       </div>
     </header>
     <main>
@@ -369,9 +396,9 @@
         <div class="panel-body">
           <div class="row" style="margin-bottom: 12px">
             <input id="history-symbol" maxlength="10" placeholder="SYMBOL" value="VOO" />
-            <button id="refresh-daily-history" class="secondary">Refresh Daily</button>
-            <button id="refresh-intraday-history" class="secondary">Refresh Intraday</button>
-            <button id="view-stored-history" class="secondary">View Stored</button>
+            <button id="refresh-daily-history" class="secondary" title="Fetch recent daily bars, meaning each day's open, high, low, close, and volume, then save them locally.">Refresh Daily</button>
+            <button id="refresh-intraday-history" class="secondary" title="Fetch today's minute-by-minute market bars from yfinance and save them locally for later review or backtesting.">Refresh Intraday</button>
+            <button id="view-stored-history" class="secondary" title="Show the saved historical bars from the local SQLite database. This does not fetch new market data.">View Stored</button>
           </div>
           <div id="stored-history" class="empty">Refresh or view stored bars.</div>
         </div>
@@ -393,8 +420,8 @@
         <div class="panel-body">
           <div class="row" style="margin-bottom: 12px">
             <input id="backtest-symbol" maxlength="10" placeholder="SYMBOL" value="VOO" />
-            <button id="run-backtest" class="secondary">Run Backtest</button>
-            <button id="run-stored-backtest" class="secondary">Stored Intraday</button>
+            <button id="run-backtest" class="secondary" title="Estimate how the signal rules would have performed recently by using daily open/high/low/close data. This is a rough check, not proof.">Run Backtest</button>
+            <button id="run-stored-backtest" class="secondary" title="Test the signal rules against intraday bars already saved by this app. This is more realistic, but only covers data you have stored.">Stored Intraday</button>
           </div>
           <div id="backtest" class="empty">No backtest run yet.</div>
         </div>
@@ -603,11 +630,48 @@
         `;
       }
 
+      function helpIcon(text) {
+        return `<span class="help-icon" title="${text}" aria-label="${text}">?</span>`;
+      }
+
       function scoreLabel(key) {
         return key
           .split("_")
           .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
           .join(" ");
+      }
+
+      function scoreDisplay(key) {
+        const labels = {
+          intraday_vwap_setup: "Price vs average",
+          momentum_recovery: "Price stabilizing",
+          historical_setup: "Longer-term setup",
+          volatility_adjusted_dip: "Dip quality",
+          volume_confirmation: "Volume support",
+          news_context: "News context",
+        };
+        const help = {
+          intraday_vwap_setup:
+            "Checks whether the current price is attractive compared with today's volume-weighted average price and intraday range. In plain terms: is the price low compared with where most trading happened today?",
+          momentum_recovery:
+            "Checks whether the price is starting to stabilize after falling. The app prefers a dip that is slowing or recovering, not one that is still dropping quickly.",
+          historical_setup:
+            "Compares today's price with recent closing prices and longer-term trend context. This helps avoid judging today's price in isolation.",
+          volatility_adjusted_dip:
+            "Checks whether the dip is meaningful for this symbol's normal movement. A one-dollar drop may matter for one stock but be normal noise for another.",
+          volume_confirmation:
+            "Looks for enough trading activity to make the price move more reliable. Thin or weak volume makes a signal less trustworthy.",
+          news_context:
+            "Adjusts confidence for broad market or symbol-specific news. Negative or high-risk news can reduce or block an otherwise attractive price signal.",
+        };
+        return {
+          label: labels[key] || scoreLabel(key),
+          help: help[key] || "This is one part of the confidence score.",
+        };
+      }
+
+      function term(text, helpText) {
+        return `<span class="label-with-help">${text}${helpIcon(helpText)}</span>`;
       }
 
       function signalCards(signals) {
@@ -653,14 +717,15 @@
                       </ul>
                       <div class="score-grid">
                         ${Object.keys(scoreBreakdown)
-                          .map(
-                            (key) => `
+                          .map((key) => {
+                            const item = scoreDisplay(key);
+                            return `
                               <div class="score-item">
-                                <span>${scoreLabel(key)}</span>
+                                <span class="label-with-help">${item.label}${helpIcon(item.help)}</span>
                                 <strong>${Number(scoreBreakdown[key]).toFixed(1)}</strong>
                               </div>
-                            `
-                          )
+                            `;
+                          })
                           .join("")}
                       </div>
                     </div>
@@ -695,20 +760,20 @@
             </div>
             <div class="score-grid">
               <div class="score-item">
-                <span>False signal days</span>
+                <span>${term("False signal days", "Days where the app found a buy signal, but the entry price ended up higher than that day's closing price. Lower is better.")}</span>
                 <strong>${result.false_signal_days ?? 0}</strong>
               </div>
               <div class="score-item">
-                <span>False signal rate</span>
+                <span>${term("False signal rate", "False signal days divided by all signal days. This is a rough quality check for how often signals looked bad by the close.")}</span>
                 <strong>${Math.round((result.false_signal_rate || 0) * 100)}%</strong>
               </div>
             </div>
             <table>
               <thead>
                 <tr>
-                  <th>Entry Method</th>
-                  <th class="num">Average Price</th>
-                  <th class="num">Delta vs Signal</th>
+                  <th>${term("Entry Method", "The buying approach being compared: the app's signal, market open, noon, close, or a random time.")}</th>
+                  <th class="num">${term("Average Price", "The average simulated buy price for this method across the tested days.")}</th>
+                  <th class="num">${term("Delta vs Signal", "How much higher or lower this method's average price was compared with the app's signal. Positive means the app signal was cheaper.")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -737,10 +802,10 @@
                 ? `<table>
                     <thead>
                       <tr>
-                        <th>Threshold</th>
-                        <th class="num">Signal Days</th>
-                        <th class="num">False Signals</th>
-                        <th class="num">Delta vs Open</th>
+                        <th>${term("Threshold", "Minimum confidence score required before the app counts a buy-window signal. Higher thresholds are stricter.")}</th>
+                        <th class="num">${term("Signal Days", "How many tested days produced at least one qualifying app signal at this threshold.")}</th>
+                        <th class="num">${term("False Signals", "How many signal days ended with the signal entry price higher than the closing price.")}</th>
+                        <th class="num">${term("Delta vs Open", "Average open price minus average app signal price. Positive means the signal was cheaper than buying at the open.")}</th>
                       </tr>
                     </thead>
                     <tbody>

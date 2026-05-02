@@ -433,6 +433,20 @@ VOO 662.510009765625 2026-05-01T15:59:00-04:00 yfinance
 - Verified `GET /health` reports monitoring-only and auto-trading disabled.
 - Static scan found no broker order-placement code paths.
 
+### Checkpoint 22: Dashboard Help Text
+
+- Added hover help for dashboard actions:
+  - refresh prices
+  - run analysis
+  - demo analysis
+  - start/stop monitor
+  - refresh/view stored history
+  - run daily and stored-intraday backtests
+- Replaced technical score component labels with plainer dashboard labels while
+  preserving detailed explanations in hover help.
+- Added hover help for backtest result terms such as false signal rate,
+  threshold, signal days, and delta versus signal/open.
+
 ### Resume Principle
 
 Before each major implementation phase:

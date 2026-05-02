@@ -134,6 +134,8 @@ python3 -m unittest discover -s tests
   action.
 - Backtest output now includes signal rate, false-signal count/rate, and daily
   OHLC threshold sensitivity.
+- Dashboard now includes hover help for score components, backtest terms, and
+  history/backtest actions so non-specialist users can understand the terminology.
 
 ## Manual Smoke-Test Checklist
 
