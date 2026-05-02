@@ -4,7 +4,11 @@ from datetime import date, datetime, timedelta
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
-from backend.trading_monitor.backtest import run_intraday_backtest
+from backend.trading_monitor.backtest import (
+    run_daily_ohlc_backtest,
+    run_intraday_backtest,
+    synthesize_intraday_sessions_from_daily_bars,
+)
 from backend.trading_monitor.config import AppConfig
 from backend.trading_monitor.demo import DemoMarketDataProvider
 from backend.trading_monitor.models import Bar, NewsContext, NotificationRecord, PriceUpdate
@@ -211,6 +215,47 @@ class BacktestTests(unittest.TestCase):
         self.assertEqual(result.signal_days, 0)
         self.assertIsNone(result.average_signal_price)
         self.assertEqual(result.baseline_deltas()["open"], None)
+
+    def test_synthesizes_intraday_sessions_from_daily_bars(self):
+        daily_bar = Bar(
+            symbol="VOO",
+            timestamp=datetime(2026, 5, 1, 6, 30, tzinfo=PACIFIC),
+            open=100,
+            high=104,
+            low=98,
+            close=101,
+            volume=8000,
+            kind="daily",
+            source="test",
+        )
+
+        sessions = synthesize_intraday_sessions_from_daily_bars([daily_bar])
+
+        self.assertEqual(len(sessions[daily_bar.timestamp.date()]), 8)
+        self.assertEqual(sessions[daily_bar.timestamp.date()][0].symbol, "VOO")
+
+    def test_daily_ohlc_backtest_returns_baselines(self):
+        bars = []
+        for index in range(35):
+            close = 100 + (index % 5)
+            bars.append(
+                Bar(
+                    symbol="VOO",
+                    timestamp=datetime(2026, 4, 1, 6, 30, tzinfo=PACIFIC) + timedelta(days=index),
+                    open=close + 1,
+                    high=close + 2,
+                    low=close - 2,
+                    close=close,
+                    volume=1000,
+                    kind="daily",
+                    source="test",
+                )
+            )
+
+        result = run_daily_ohlc_backtest("VOO", bars, threshold=75)
+
+        self.assertEqual(result.days_tested, 15)
+        self.assertIn("open", result.baseline_deltas())
 
 
 if __name__ == "__main__":

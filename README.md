@@ -54,6 +54,7 @@ curl -X POST http://127.0.0.1:8080/prices/refresh
 curl http://127.0.0.1:8080/history/open-close
 curl -X POST http://127.0.0.1:8080/monitoring/run-once
 curl -X POST http://127.0.0.1:8080/monitoring/run-demo
+curl 'http://127.0.0.1:8080/backtest/daily?symbol=VOO&days=90'
 curl -X POST http://127.0.0.1:8080/monitoring/start
 curl -X POST http://127.0.0.1:8080/monitoring/stop
 ```
@@ -89,6 +90,11 @@ being low:
 The dashboard Demo Analysis button calls `POST /monitoring/run-demo`. It uses
 deterministic sample market data at an in-hours timestamp so the signal cards
 can be tested while the market is closed. It does not send Telegram alerts.
+
+The dashboard Backtest panel calls `GET /backtest/daily`. This first backtest
+uses daily OHLC bars to synthesize intraday paths and compare signal entries
+against open, noon, close, and random baselines. It is a rough validation tool,
+not execution-grade proof.
 
 Useful provider settings:
 

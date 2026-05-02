@@ -5,6 +5,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Dict, Optional
 
+from .backtest import run_daily_ohlc_backtest
 from .config import AppConfig, load_config
 from .demo import DemoMarketDataProvider, demo_market_time
 from .ibkr import IbkrMarketDataClient
@@ -222,6 +223,50 @@ def create_app(
     @app.get("/notifications")
     def notifications(limit: int = 100):
         return {"notifications": app_storage.list_notifications(limit=limit)}
+
+    @app.get("/backtest/daily")
+    def daily_backtest(symbol: str, days: int = 90, threshold: int = 75):
+        normalized = normalize_symbol(symbol)
+        bounded_days = max(30, min(days, 250))
+        bounded_threshold = max(0, min(threshold, 100))
+        bars = list(market_data.daily_bars(normalized, bounded_days))
+        result = run_daily_ohlc_backtest(
+            symbol=normalized,
+            daily_bars=bars,
+            threshold=bounded_threshold,
+        )
+        return {
+            "symbol": result.symbol,
+            "method": "synthetic_daily_ohlc",
+            "warning": (
+                "Uses daily OHLC bars to synthesize intraday paths. "
+                "Use for rough validation only, not execution-grade proof."
+            ),
+            "days_requested": bounded_days,
+            "days_tested": result.days_tested,
+            "signal_days": result.signal_days,
+            "threshold": result.threshold,
+            "averages": {
+                "signal": result.average_signal_price,
+                "open": result.average_open_price,
+                "noon": result.average_noon_price,
+                "close": result.average_close_price,
+                "random": result.average_random_price,
+            },
+            "deltas": result.baseline_deltas(),
+            "day_results": [
+                {
+                    "date": day.day.isoformat(),
+                    "signal_price": day.signal_price,
+                    "signal_confidence": day.signal_confidence,
+                    "open_price": day.open_price,
+                    "noon_price": day.noon_price,
+                    "close_price": day.close_price,
+                    "random_price": day.random_price,
+                }
+                for day in result.day_results
+            ],
+        }
 
     @app.post("/notifications/test")
     def test_notification():

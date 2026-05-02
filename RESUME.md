@@ -116,3 +116,6 @@ python3 -m unittest discover -s tests
   closed-market UI testing with deterministic sample data and no real alerts.
 - Signal scoring now includes momentum recovery, lower-low and aggressive
   selling-volume blockers, and volatility-adjusted dip quality.
+- Added `GET /backtest/daily` and a dashboard Backtest panel using synthetic
+  daily-OHLC intraday paths for rough validation against open/noon/close/random
+  baselines.

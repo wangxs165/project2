@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import random
 from dataclasses import dataclass, field
-from datetime import date
+from datetime import date, timedelta
 from typing import Dict, Mapping, Optional, Sequence
 
 from .models import Bar, NewsContext
@@ -136,3 +136,90 @@ def run_intraday_backtest(
         day_results=day_results,
     )
 
+
+def synthesize_intraday_sessions_from_daily_bars(
+    daily_bars: Sequence[Bar],
+    bars_per_day: int = 8,
+) -> Dict[date, Sequence[Bar]]:
+    sessions: Dict[date, Sequence[Bar]] = {}
+    if bars_per_day < 4:
+        raise ValueError("bars_per_day must be at least 4")
+
+    for daily_bar in daily_bars:
+        day = daily_bar.timestamp.date()
+        template = [
+            daily_bar.open,
+            daily_bar.high,
+            (daily_bar.open + daily_bar.high + daily_bar.low) / 3,
+            daily_bar.low,
+            (daily_bar.low + daily_bar.close) / 2,
+            daily_bar.close,
+        ]
+        values = _resample_path(template, bars_per_day)
+        session = []
+        for index, close in enumerate(values):
+            previous = values[index - 1] if index > 0 else daily_bar.open
+            local_high = max(close, previous)
+            local_low = min(close, previous)
+            session.append(
+                Bar(
+                    symbol=daily_bar.symbol,
+                    timestamp=daily_bar.timestamp + timedelta(minutes=index * 45),
+                    open=previous,
+                    high=max(local_high, daily_bar.low),
+                    low=min(local_low, daily_bar.high),
+                    close=close,
+                    volume=max(daily_bar.volume / bars_per_day, 0),
+                    kind="intraday",
+                    source=f"{daily_bar.source}-synthetic",
+                )
+            )
+        sessions[day] = session
+    return sessions
+
+
+def run_daily_ohlc_backtest(
+    symbol: str,
+    daily_bars: Sequence[Bar],
+    threshold: int = 75,
+    random_seed: int = 7,
+) -> BacktestResult:
+    ordered = sorted(daily_bars, key=lambda bar: bar.timestamp)
+    if len(ordered) < 25:
+        return BacktestResult(
+            symbol=symbol,
+            days_tested=0,
+            signal_days=0,
+            threshold=threshold,
+            average_signal_price=None,
+            average_open_price=0.0,
+            average_noon_price=0.0,
+            average_close_price=0.0,
+            average_random_price=0.0,
+            day_results=[],
+        )
+
+    historical = [bar.close for bar in ordered[:20]]
+    test_bars = ordered[20:]
+    sessions = synthesize_intraday_sessions_from_daily_bars(test_bars)
+    return run_intraday_backtest(
+        symbol=symbol,
+        sessions=sessions,
+        historical_daily_closes=historical,
+        threshold=threshold,
+        random_seed=random_seed,
+    )
+
+
+def _resample_path(values: Sequence[float], output_count: int) -> Sequence[float]:
+    if output_count == len(values):
+        return list(values)
+    result = []
+    max_source_index = len(values) - 1
+    for index in range(output_count):
+        position = index * max_source_index / (output_count - 1)
+        lower = int(position)
+        upper = min(lower + 1, max_source_index)
+        weight = position - lower
+        result.append((values[lower] * (1 - weight)) + (values[upper] * weight))
+    return result

@@ -366,6 +366,15 @@ VOO 662.510009765625 2026-05-01T15:59:00-04:00 yfinance
 - Changed the strong setup expectation to require stabilization after a dip,
   instead of rewarding a still-falling price below VWAP.
 
+### Checkpoint 17: Daily OHLC Backtest Panel
+
+- Added daily-OHLC synthetic backtesting helper.
+- Added `GET /backtest/daily`.
+- Dashboard now includes a Backtest panel with average signal entry compared
+  against open, noon, close, and random baselines.
+- The endpoint returns an explicit warning that this uses synthetic intraday
+  paths from daily OHLC and is for rough validation only.
+
 ### Resume Principle
 
 Before each major implementation phase:

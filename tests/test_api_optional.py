@@ -122,6 +122,12 @@ class ApiIntegrationTests(unittest.TestCase):
             self.assertIn("open", history.json()["history"]["VOO"][0])
             self.assertIn("close", history.json()["history"]["VOO"][0])
 
+            backtest = client.get("/backtest/daily?symbol=VOO&days=35")
+            self.assertEqual(backtest.status_code, 200)
+            self.assertEqual(backtest.json()["symbol"], "VOO")
+            self.assertEqual(backtest.json()["method"], "synthetic_daily_ohlc")
+            self.assertIn("open", backtest.json()["deltas"])
+
             stopped = client.post("/monitoring/stop")
             self.assertFalse(stopped.json()["monitoring"])
 

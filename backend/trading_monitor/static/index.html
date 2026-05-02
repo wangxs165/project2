@@ -371,6 +371,20 @@
 
       <section>
         <div class="panel-head">
+          <h2>Backtest</h2>
+          <span class="muted">Daily OHLC synthetic validation</span>
+        </div>
+        <div class="panel-body">
+          <div class="row" style="margin-bottom: 12px">
+            <input id="backtest-symbol" maxlength="10" placeholder="SYMBOL" value="VOO" />
+            <button id="run-backtest" class="secondary">Run Backtest</button>
+          </div>
+          <div id="backtest" class="empty">No backtest run yet.</div>
+        </div>
+      </section>
+
+      <section class="span-2">
+        <div class="panel-head">
           <h2>Notifications</h2>
         </div>
         <div id="notifications" class="panel-body"></div>
@@ -612,6 +626,49 @@
         return `${result.generated_signals} signals, ${result.sent_notifications} alerts sent`;
       }
 
+      function backtestView(result) {
+        const deltas = result.deltas || {};
+        const averages = result.averages || {};
+        return `
+          <div class="stack">
+            <div class="row">
+              <span class="badge">${result.symbol}</span>
+              <span class="muted">${result.days_tested} days tested, ${result.signal_days} signal days</span>
+            </div>
+            <table>
+              <thead>
+                <tr>
+                  <th>Entry Method</th>
+                  <th class="num">Average Price</th>
+                  <th class="num">Delta vs Signal</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><strong>Signal</strong></td>
+                  <td class="num">${money(averages.signal)}</td>
+                  <td class="num">baseline</td>
+                </tr>
+                ${["open", "noon", "close", "random"]
+                  .map((key) => {
+                    const delta = deltas[key];
+                    const cls = delta === null || delta === undefined ? "" : delta >= 0 ? "status-ok" : "status-bad";
+                    return `
+                      <tr>
+                        <td>${scoreLabel(key)}</td>
+                        <td class="num">${money(averages[key])}</td>
+                        <td class="num ${cls}">${delta === null || delta === undefined ? "n/a" : money(delta)}</td>
+                      </tr>
+                    `;
+                  })
+                  .join("")}
+              </tbody>
+            </table>
+            <div class="muted">${result.warning}</div>
+          </div>
+        `;
+      }
+
       async function refresh() {
         const [status, symbols, prices, history, signals, notifications] = await Promise.all([
           json("/status"),
@@ -711,6 +768,16 @@
         await runWithDisabled(event.currentTarget, async () => {
           await json("/monitoring/run-demo", { method: "POST" });
           await refresh();
+        });
+      });
+      document.getElementById("run-backtest").addEventListener("click", async (event) => {
+        await runWithDisabled(event.currentTarget, async () => {
+          const input = document.getElementById("backtest-symbol");
+          const symbol = input.value.trim().toUpperCase() || "VOO";
+          input.value = symbol;
+          const result = await json(`/backtest/daily?symbol=${encodeURIComponent(symbol)}&days=90`);
+          document.getElementById("backtest").className = "panel-body";
+          document.getElementById("backtest").innerHTML = backtestView(result);
         });
       });
       document.getElementById("add-symbol").addEventListener("click", async () => {
