@@ -68,7 +68,7 @@ class TelegramClient:
             method="POST",
         )
         try:
-            response = self._opener(request, self.timeout_seconds)
+            response = self._opener(request, timeout=self.timeout_seconds)
             status = getattr(response, "status", 200)
             if status >= 400:
                 raise TelegramError(f"Telegram API returned HTTP {status}")
@@ -96,4 +96,3 @@ class TelegramClient:
                 error=str(exc).replace(self.bot_token, redact_secret(self.bot_token)),
                 created_at=created_at,
             )
-

@@ -192,7 +192,7 @@ class TelegramTests(unittest.TestCase):
         class Response:
             status = 200
 
-        def opener(request, timeout):
+        def opener(request, *, timeout):
             calls.append((request, timeout))
             return Response()
 
@@ -202,6 +202,7 @@ class TelegramTests(unittest.TestCase):
 
         self.assertEqual(record.status, "sent")
         self.assertEqual(len(calls), 1)
+        self.assertEqual(calls[0][1], 10)
         self.assertIn(b"BUY WINDOW SUGGESTION", calls[0][0].data)
 
     def test_send_signal_failure_does_not_leak_token(self):
