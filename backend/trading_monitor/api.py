@@ -125,6 +125,31 @@ def create_app(
     def prices():
         return {"prices": app_storage.latest_prices()}
 
+    @app.get("/history/open-close")
+    def open_close_history(days: int = 5):
+        bounded_days = max(1, min(days, 20))
+        result = {}
+        errors = []
+        for symbol in app_storage.get_watchlist():
+            try:
+                bars = list(market_data.daily_bars(symbol, bounded_days))
+                result[symbol] = [
+                    {
+                        "date": bar.timestamp.date().isoformat(),
+                        "open": bar.open,
+                        "close": bar.close,
+                        "high": bar.high,
+                        "low": bar.low,
+                        "volume": bar.volume,
+                        "source": bar.source,
+                    }
+                    for bar in bars[-bounded_days:]
+                ]
+            except Exception as exc:
+                result[symbol] = []
+                errors.append({"symbol": symbol, "error": str(exc)})
+        return {"days": bounded_days, "history": result, "errors": errors}
+
     @app.post("/prices/refresh")
     def refresh_prices():
         now = datetime.now(timezone.utc)

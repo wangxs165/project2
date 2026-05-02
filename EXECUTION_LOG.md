@@ -318,6 +318,17 @@ VOO 662.510009765625 2026-05-01T15:59:00-04:00 yfinance
 - The endpoint does not generate signals and does not send notifications.
 - Dashboard now has a Refresh Prices button.
 
+### Checkpoint 13: Dashboard Price Tables and Daily History
+
+- Added `GET /history/open-close`.
+- The endpoint returns recent daily open, close, high, low, volume, and source
+  values for each watchlist symbol.
+- Reworked the dashboard from raw JSON blocks to structured operational tables:
+  - latest price table
+  - 5-day open/close history by symbol
+  - compact status metrics
+  - compact signal and notification tables
+
 ### Resume Principle
 
 Before each major implementation phase:

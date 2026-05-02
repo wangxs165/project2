@@ -7,14 +7,18 @@
     <style>
       :root {
         color-scheme: light;
-        --bg: #f6f7f9;
+        --bg: #f3f5f7;
         --panel: #ffffff;
-        --text: #17202a;
-        --muted: #5e6b78;
-        --line: #d9e0e7;
-        --accent: #16697a;
-        --danger: #a33a3a;
-        --ok: #2f7d4f;
+        --text: #151b23;
+        --muted: #66717f;
+        --line: #d8dee6;
+        --head: #eef2f5;
+        --accent: #176b5d;
+        --accent-soft: #e7f3ef;
+        --danger: #a23b3b;
+        --warn: #8a5a00;
+        --ok: #247247;
+        --shadow: 0 1px 2px rgba(20, 29, 38, 0.06);
       }
       * {
         box-sizing: border-box;
@@ -26,52 +30,54 @@
         color: var(--text);
       }
       header {
-        padding: 20px 24px;
+        display: flex;
+        justify-content: space-between;
+        gap: 16px;
+        align-items: flex-start;
+        padding: 18px 24px;
         border-bottom: 1px solid var(--line);
         background: var(--panel);
       }
       h1 {
-        margin: 0;
+        margin: 0 0 4px;
         font-size: 22px;
+        letter-spacing: 0;
+      }
+      h2 {
+        margin: 0;
+        font-size: 15px;
         letter-spacing: 0;
       }
       main {
         display: grid;
-        gap: 16px;
-        padding: 20px 24px;
-        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 14px;
+        padding: 18px 24px 28px;
+        grid-template-columns: minmax(260px, 360px) minmax(0, 1fr);
       }
       section {
         background: var(--panel);
         border: 1px solid var(--line);
         border-radius: 8px;
-        padding: 16px;
+        box-shadow: var(--shadow);
         min-width: 0;
       }
-      h2 {
-        margin: 0 0 12px;
-        font-size: 16px;
+      .panel-head {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        align-items: center;
+        padding: 12px 14px;
+        border-bottom: 1px solid var(--line);
       }
-      button {
-        border: 1px solid var(--accent);
-        background: var(--accent);
-        color: white;
-        border-radius: 6px;
-        padding: 8px 12px;
-        font-size: 14px;
-        cursor: pointer;
+      .panel-body {
+        padding: 14px;
       }
-      button.secondary {
-        background: white;
-        color: var(--accent);
+      .stack {
+        display: grid;
+        gap: 14px;
       }
-      input {
-        width: 140px;
-        padding: 8px;
-        border: 1px solid var(--line);
-        border-radius: 6px;
-        font-size: 14px;
-        text-transform: uppercase;
+      .span-2 {
+        grid-column: 1 / -1;
       }
       .row {
         display: flex;
@@ -79,9 +85,93 @@
         align-items: center;
         flex-wrap: wrap;
       }
+      .toolbar {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        justify-content: flex-end;
+        flex-wrap: wrap;
+      }
+      button {
+        border: 1px solid var(--accent);
+        background: var(--accent);
+        color: white;
+        border-radius: 6px;
+        min-height: 34px;
+        padding: 7px 11px;
+        font-size: 13px;
+        cursor: pointer;
+        white-space: nowrap;
+      }
+      button.secondary {
+        background: white;
+        color: var(--accent);
+      }
+      button.danger {
+        border-color: var(--danger);
+        color: var(--danger);
+        background: white;
+      }
+      button:disabled {
+        cursor: wait;
+        opacity: 0.65;
+      }
+      input {
+        width: 132px;
+        min-height: 34px;
+        padding: 7px 9px;
+        border: 1px solid var(--line);
+        border-radius: 6px;
+        font-size: 13px;
+        text-transform: uppercase;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        table-layout: fixed;
+      }
+      th,
+      td {
+        padding: 9px 10px;
+        border-bottom: 1px solid var(--line);
+        text-align: left;
+        vertical-align: middle;
+        font-size: 13px;
+        overflow-wrap: anywhere;
+      }
+      th {
+        background: var(--head);
+        color: #334150;
+        font-weight: 600;
+      }
+      tbody tr:last-child td {
+        border-bottom: 0;
+      }
+      .num {
+        text-align: right;
+        font-variant-numeric: tabular-nums;
+      }
       .muted {
         color: var(--muted);
         font-size: 13px;
+      }
+      .status-grid {
+        display: grid;
+        gap: 8px;
+      }
+      .metric {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 8px 0;
+        border-bottom: 1px solid var(--line);
+        font-size: 13px;
+      }
+      .metric:last-child {
+        border-bottom: 0;
+      }
+      .metric strong {
+        font-weight: 600;
       }
       .pill {
         display: inline-flex;
@@ -89,9 +179,19 @@
         gap: 6px;
         border: 1px solid var(--line);
         border-radius: 999px;
-        padding: 6px 10px;
-        margin: 0 6px 6px 0;
+        padding: 5px 8px;
         background: #fbfcfd;
+        font-size: 13px;
+      }
+      .badge {
+        display: inline-flex;
+        align-items: center;
+        border-radius: 999px;
+        padding: 3px 8px;
+        background: var(--accent-soft);
+        color: var(--accent);
+        font-size: 12px;
+        font-weight: 600;
       }
       .status-ok {
         color: var(--ok);
@@ -99,55 +199,122 @@
       .status-bad {
         color: var(--danger);
       }
-      pre {
-        margin: 0;
-        white-space: pre-wrap;
-        overflow-wrap: anywhere;
-        font-size: 12px;
-        line-height: 1.4;
+      .status-warn {
+        color: var(--warn);
+      }
+      .empty {
+        padding: 14px;
+        color: var(--muted);
+        font-size: 13px;
+      }
+      .history-grid {
+        display: grid;
+        gap: 12px;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      }
+      .history-block {
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        overflow: hidden;
+      }
+      .history-title {
+        display: flex;
+        justify-content: space-between;
+        gap: 8px;
+        align-items: center;
+        padding: 9px 10px;
+        background: #fbfcfd;
+        border-bottom: 1px solid var(--line);
+        font-size: 13px;
+        font-weight: 600;
+      }
+      @media (max-width: 820px) {
+        header,
+        main {
+          padding-left: 14px;
+          padding-right: 14px;
+        }
+        header {
+          display: grid;
+        }
+        main {
+          grid-template-columns: 1fr;
+        }
+        .toolbar {
+          justify-content: flex-start;
+        }
+        th,
+        td {
+          padding: 8px 7px;
+          font-size: 12px;
+        }
       }
     </style>
   </head>
   <body>
     <header>
-      <h1>Intraday Investment Monitor</h1>
-      <div class="muted">Monitoring suggestion only. This app does not place trades.</div>
+      <div>
+        <h1>Intraday Investment Monitor</h1>
+        <div class="muted">Monitoring suggestion only. This app does not place trades.</div>
+      </div>
+      <div class="toolbar">
+        <button id="refresh-prices">Refresh Prices</button>
+        <button id="start" class="secondary">Start Monitor</button>
+        <button id="stop" class="secondary">Stop</button>
+      </div>
     </header>
     <main>
+      <div class="stack">
+        <section>
+          <div class="panel-head">
+            <h2>Status</h2>
+            <span id="monitoring-badge" class="badge">Loading</span>
+          </div>
+          <div id="status" class="panel-body status-grid"></div>
+        </section>
+
+        <section>
+          <div class="panel-head">
+            <h2>Watchlist</h2>
+          </div>
+          <div class="panel-body">
+            <div id="symbols" class="row"></div>
+            <div class="row" style="margin-top: 12px">
+              <input id="symbol-input" maxlength="10" placeholder="SYMBOL" />
+              <button id="add-symbol" class="secondary">Add</button>
+            </div>
+          </div>
+        </section>
+      </div>
+
       <section>
-        <h2>Status</h2>
-        <div id="status" class="muted">Loading...</div>
-        <div class="row" style="margin-top: 12px">
-          <button id="start">Start</button>
-          <button id="stop" class="secondary">Stop</button>
+        <div class="panel-head">
+          <h2>Latest Prices</h2>
+          <span id="price-updated" class="muted">No refresh yet</span>
         </div>
+        <div id="prices" class="panel-body"></div>
       </section>
 
-      <section>
-        <h2>Watchlist</h2>
-        <div id="symbols"></div>
-        <div class="row" style="margin-top: 10px">
-          <input id="symbol-input" maxlength="10" placeholder="SYMBOL" />
-          <button id="add-symbol">Add</button>
+      <section class="span-2">
+        <div class="panel-head">
+          <h2>Past 5 Trading Days</h2>
+          <span class="muted">Daily open and close from the active provider</span>
         </div>
+        <div id="history" class="panel-body"></div>
       </section>
 
       <section>
-        <h2>Latest Prices</h2>
-        <div class="row" style="margin-bottom: 10px">
-          <button id="refresh-prices" class="secondary">Refresh Prices</button>
+        <div class="panel-head">
+          <h2>Signals</h2>
         </div>
-        <pre id="prices">No price data yet.</pre>
+        <div id="signals" class="panel-body"></div>
       </section>
 
       <section>
-        <h2>Signals</h2>
-        <pre id="signals">No signals yet.</pre>
-      </section>
-
-      <section>
-        <h2>Notifications</h2>
-        <pre id="notifications">No notifications yet.</pre>
+        <div class="panel-head">
+          <h2>Notifications</h2>
+        </div>
+        <div id="notifications" class="panel-body"></div>
       </section>
     </main>
     <script>
@@ -159,56 +326,245 @@
         return response.json();
       }
 
-      function pretty(value) {
-        return JSON.stringify(value, null, 2);
+      function money(value) {
+        if (value === null || value === undefined || Number.isNaN(Number(value))) return "n/a";
+        return Number(value).toLocaleString(undefined, {
+          style: "currency",
+          currency: "USD",
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
+        });
+      }
+
+      function number(value) {
+        if (value === null || value === undefined || Number.isNaN(Number(value))) return "n/a";
+        return Number(value).toLocaleString();
+      }
+
+      function shortDate(value) {
+        if (!value) return "n/a";
+        if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+          const [year, month, day] = value.split("-").map(Number);
+          return new Date(year, month - 1, day).toLocaleDateString(undefined, {
+            month: "short",
+            day: "numeric",
+          });
+        }
+        const date = new Date(value);
+        if (Number.isNaN(date.getTime())) return String(value);
+        return date.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+      }
+
+      function shortTime(value) {
+        if (!value) return "n/a";
+        const date = new Date(value);
+        if (Number.isNaN(date.getTime())) return String(value);
+        return date.toLocaleString(undefined, {
+          month: "short",
+          day: "numeric",
+          hour: "numeric",
+          minute: "2-digit",
+        });
+      }
+
+      function priceRows(prices) {
+        const rows = Object.values(prices || {});
+        if (!rows.length) {
+          return `<div class="empty">No price data yet. Use Refresh Prices.</div>`;
+        }
+        return `
+          <table>
+            <thead>
+              <tr>
+                <th style="width: 16%">Symbol</th>
+                <th class="num" style="width: 18%">Latest</th>
+                <th class="num" style="width: 16%">Volume</th>
+                <th style="width: 18%">Source</th>
+                <th>Source Time</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${rows
+                .map(
+                  (row) => `
+                    <tr>
+                      <td><strong>${row.symbol}</strong></td>
+                      <td class="num">${money(row.price)}</td>
+                      <td class="num">${number(row.volume)}</td>
+                      <td>${row.source}${row.delayed ? " / delayed" : ""}</td>
+                      <td>${shortTime(row.source_ts)}</td>
+                    </tr>
+                  `
+                )
+                .join("")}
+            </tbody>
+          </table>
+        `;
+      }
+
+      function historyView(history) {
+        const symbols = Object.keys(history || {});
+        if (!symbols.length) {
+          return `<div class="empty">No daily history loaded.</div>`;
+        }
+        return `
+          <div class="history-grid">
+            ${symbols
+              .map((symbol) => {
+                const rows = history[symbol] || [];
+                return `
+                  <div class="history-block">
+                    <div class="history-title">
+                      <span>${symbol}</span>
+                      <span class="muted">${rows.length} days</span>
+                    </div>
+                    ${
+                      rows.length
+                        ? `<table>
+                            <thead>
+                              <tr>
+                                <th>Date</th>
+                                <th class="num">Open</th>
+                                <th class="num">Close</th>
+                                <th class="num">Change</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              ${rows
+                                .map((row) => {
+                                  const change = row.close - row.open;
+                                  const cls = change >= 0 ? "status-ok" : "status-bad";
+                                  return `
+                                    <tr>
+                                      <td>${shortDate(row.date)}</td>
+                                      <td class="num">${money(row.open)}</td>
+                                      <td class="num">${money(row.close)}</td>
+                                      <td class="num ${cls}">${change >= 0 ? "+" : ""}${money(change)}</td>
+                                    </tr>
+                                  `;
+                                })
+                                .join("")}
+                            </tbody>
+                          </table>`
+                        : `<div class="empty">No history available.</div>`
+                    }
+                  </div>
+                `;
+              })
+              .join("")}
+          </div>
+        `;
+      }
+
+      function compactList(items, emptyText, renderer) {
+        if (!items || !items.length) return `<div class="empty">${emptyText}</div>`;
+        return `
+          <table>
+            <tbody>
+              ${items.map(renderer).join("")}
+            </tbody>
+          </table>
+        `;
       }
 
       async function refresh() {
-        const [status, symbols, prices, signals, notifications] = await Promise.all([
+        const [status, symbols, prices, history, signals, notifications] = await Promise.all([
           json("/status"),
           json("/symbols"),
           json("/prices"),
+          json("/history/open-close"),
           json("/signals"),
           json("/notifications"),
         ]);
 
+        const badge = document.getElementById("monitoring-badge");
+        badge.textContent = status.monitoring ? "Running" : "Stopped";
+        badge.className = `badge ${status.monitoring ? "status-ok" : "status-bad"}`;
+
         document.getElementById("status").innerHTML = `
-          <div>Monitoring:
-            <strong class="${status.monitoring ? "status-ok" : "status-bad"}">
-              ${status.monitoring ? "running" : "stopped"}
-            </strong>
-          </div>
-          <div>Data provider: ${status.data_provider} (${status.data_provider_status})</div>
-          <div>Tracked symbols: ${status.tracked_symbols.length}</div>
-          <div>Cycles completed: ${status.runner.cycles_completed}</div>
-          <div>Last cycle: ${status.runner.last_cycle_at || "none"}</div>
-          <div>Last market open check: ${
-            status.runner.last_cycle_result ? status.runner.last_cycle_result.market_open : "none"
-          }</div>
+          <div class="metric"><span>Data provider</span><strong>${status.data_provider}</strong></div>
+          <div class="metric"><span>Provider status</span><strong>${status.data_provider_status}</strong></div>
+          <div class="metric"><span>Tracked symbols</span><strong>${status.tracked_symbols.length}</strong></div>
+          <div class="metric"><span>Latest prices</span><strong>${status.latest_price_count}</strong></div>
+          <div class="metric"><span>Cycles completed</span><strong>${status.runner.cycles_completed}</strong></div>
+          <div class="metric"><span>Last cycle</span><strong>${shortTime(status.runner.last_cycle_at)}</strong></div>
+          <div class="metric"><span>Market open check</span><strong>${
+            status.runner.last_cycle_result ? status.runner.last_cycle_result.market_open : "n/a"
+          }</strong></div>
         `;
 
         document.getElementById("symbols").innerHTML = symbols.symbols
-          .map((symbol) => `<span class="pill">${symbol}
-            <button class="secondary" data-remove="${symbol}">Remove</button>
-          </span>`)
+          .map(
+            (symbol) => `<span class="pill">${symbol}
+              <button class="danger" data-remove="${symbol}">Remove</button>
+            </span>`
+          )
           .join("");
 
-        document.getElementById("prices").textContent = pretty(prices.prices);
-        document.getElementById("signals").textContent = pretty(signals.signals.slice(0, 5));
-        document.getElementById("notifications").textContent = pretty(notifications.notifications.slice(0, 5));
+        document.getElementById("prices").innerHTML = priceRows(prices.prices);
+        const latestReceived = Object.values(prices.prices || {})
+          .map((row) => row.received_ts)
+          .sort()
+          .pop();
+        document.getElementById("price-updated").textContent = latestReceived
+          ? `Updated ${shortTime(latestReceived)}`
+          : "No refresh yet";
+
+        document.getElementById("history").innerHTML = historyView(history.history);
+
+        document.getElementById("signals").innerHTML = compactList(
+          signals.signals.slice(0, 5),
+          "No signals yet.",
+          (signal) => `
+            <tr>
+              <td><strong>${signal.symbol}</strong></td>
+              <td>${signal.band}</td>
+              <td class="num">${signal.confidence} / 100</td>
+              <td>${shortTime(signal.created_at)}</td>
+            </tr>
+          `
+        );
+
+        document.getElementById("notifications").innerHTML = compactList(
+          notifications.notifications.slice(0, 5),
+          "No notifications yet.",
+          (notification) => `
+            <tr>
+              <td><strong>${notification.symbol}</strong></td>
+              <td>${notification.status}</td>
+              <td class="num">${notification.confidence ?? "n/a"}</td>
+              <td>${shortTime(notification.created_at)}</td>
+            </tr>
+          `
+        );
       }
 
-      document.getElementById("start").addEventListener("click", async () => {
-        await json("/monitoring/start", { method: "POST" });
-        refresh();
+      async function runWithDisabled(button, action) {
+        button.disabled = true;
+        try {
+          await action();
+        } finally {
+          button.disabled = false;
+        }
+      }
+
+      document.getElementById("start").addEventListener("click", async (event) => {
+        await runWithDisabled(event.currentTarget, async () => {
+          await json("/monitoring/start", { method: "POST" });
+          await refresh();
+        });
       });
-      document.getElementById("stop").addEventListener("click", async () => {
-        await json("/monitoring/stop", { method: "POST" });
-        refresh();
+      document.getElementById("stop").addEventListener("click", async (event) => {
+        await runWithDisabled(event.currentTarget, async () => {
+          await json("/monitoring/stop", { method: "POST" });
+          await refresh();
+        });
       });
-      document.getElementById("refresh-prices").addEventListener("click", async () => {
-        await json("/prices/refresh", { method: "POST" });
-        refresh();
+      document.getElementById("refresh-prices").addEventListener("click", async (event) => {
+        await runWithDisabled(event.currentTarget, async () => {
+          await json("/prices/refresh", { method: "POST" });
+          await refresh();
+        });
       });
       document.getElementById("add-symbol").addEventListener("click", async () => {
         const input = document.getElementById("symbol-input");
@@ -218,13 +574,13 @@
           body: JSON.stringify({ symbol: input.value }),
         });
         input.value = "";
-        refresh();
+        await refresh();
       });
       document.getElementById("symbols").addEventListener("click", async (event) => {
         const symbol = event.target.dataset.remove;
         if (!symbol) return;
         await json(`/symbols/${symbol}`, { method: "DELETE" });
-        refresh();
+        await refresh();
       });
 
       refresh();

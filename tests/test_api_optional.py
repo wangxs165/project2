@@ -1,12 +1,12 @@
 import importlib.util
 import tempfile
 import unittest
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 from backend.trading_monitor.api import create_app
 from backend.trading_monitor.config import AppConfig
-from backend.trading_monitor.models import PriceUpdate
+from backend.trading_monitor.models import Bar, PriceUpdate
 from backend.trading_monitor.monitoring import MonitoringCycleResult
 from backend.trading_monitor.storage import Storage
 
@@ -35,6 +35,27 @@ class FakeMarketDataProvider:
             source="fake",
             delayed=True,
         )
+
+    def daily_bars(self, symbol, lookback_days):
+        start = datetime(2026, 4, 27, 20, 0, tzinfo=timezone.utc)
+        bars = []
+        for index in range(lookback_days):
+            open_price = 100.0 + index
+            close_price = open_price + 0.5
+            bars.append(
+                Bar(
+                    symbol=symbol,
+                    timestamp=start + timedelta(days=index),
+                    open=open_price,
+                    high=close_price + 1,
+                    low=open_price - 1,
+                    close=close_price,
+                    volume=1000 + index,
+                    kind="daily",
+                    source="fake",
+                )
+            )
+        return bars
 
 
 class ApiOptionalDependencyTests(unittest.TestCase):
@@ -87,6 +108,13 @@ class ApiIntegrationTests(unittest.TestCase):
             self.assertEqual(refresh_prices.status_code, 200)
             self.assertEqual(refresh_prices.json()["errors"], [])
             self.assertIn("VOO", refresh_prices.json()["prices"])
+
+            history = client.get("/history/open-close")
+            self.assertEqual(history.status_code, 200)
+            self.assertEqual(history.json()["days"], 5)
+            self.assertEqual(len(history.json()["history"]["VOO"]), 5)
+            self.assertIn("open", history.json()["history"]["VOO"][0])
+            self.assertIn("close", history.json()["history"]["VOO"][0])
 
             stopped = client.post("/monitoring/stop")
             self.assertFalse(stopped.json()["monitoring"])

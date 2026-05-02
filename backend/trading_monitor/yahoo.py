@@ -49,19 +49,19 @@ class YFinanceMarketDataClient:
         return self._bars_from_frame(symbol, frame, kind="intraday")
 
     def daily_closes(self, symbol: str, lookback_days: int) -> Sequence[float]:
+        return [bar.close for bar in self.daily_bars(symbol, lookback_days)]
+
+    def daily_bars(self, symbol: str, lookback_days: int) -> Sequence[Bar]:
         ticker = self._ticker(symbol)
         frame = ticker.history(
-            period=self.daily_lookback_period,
+            period=self.daily_lookback_period or "1mo",
             interval="1d",
             prepost=False,
             auto_adjust=False,
             actions=False,
             timeout=10,
         )
-        if frame is None or frame.empty or "Close" not in frame:
-            return []
-        closes = [float(value) for value in frame["Close"].dropna().tolist() if float(value) > 0]
-        return closes[-lookback_days:]
+        return self._bars_from_frame(symbol, frame, kind="daily")[-lookback_days:]
 
     def _ticker(self, symbol: str):
         try:

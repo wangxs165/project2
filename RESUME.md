@@ -107,3 +107,6 @@ python3 -m unittest discover -s tests
 - Added manual price refresh endpoint:
   `POST /prices/refresh`. It fetches provider prices outside market hours but
   does not generate signals or alerts.
+- Added recent daily history endpoint:
+  `GET /history/open-close`. The dashboard shows the latest 5 trading days'
+  open and close values in a table.

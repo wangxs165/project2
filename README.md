@@ -51,6 +51,7 @@ Useful local checks:
 curl http://127.0.0.1:8080/health
 curl http://127.0.0.1:8080/status
 curl -X POST http://127.0.0.1:8080/prices/refresh
+curl http://127.0.0.1:8080/history/open-close
 curl -X POST http://127.0.0.1:8080/monitoring/run-once
 curl -X POST http://127.0.0.1:8080/monitoring/start
 curl -X POST http://127.0.0.1:8080/monitoring/stop
@@ -65,6 +66,10 @@ blocked when data is stale.
 immediately, even outside market hours. It does not generate signals or send
 alerts. Signal generation remains market-hours gated through
 `POST /monitoring/run-once` or the background monitoring runner.
+
+`GET /history/open-close` returns daily open, close, high, low, and volume for
+the latest 5 trading days by default. The dashboard uses this for the recent
+daily open/close table.
 
 Useful provider settings:
 
