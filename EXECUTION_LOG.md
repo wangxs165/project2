@@ -409,6 +409,30 @@ VOO 662.510009765625 2026-05-01T15:59:00-04:00 yfinance
 - Added `GET /backtest/stored-intraday` for backtesting against intraday bars
   already stored in SQLite.
 
+### Checkpoint 21: Phase I Manual Smoke Checklist
+
+- Skipped real IBKR smoke testing for now because yfinance is the active Phase I
+  provider.
+- Corrected local Telegram chat ID to the private chat ID returned by
+  `getUpdates`.
+- Fixed Telegram send request handling in `backend/trading_monitor/telegram.py`.
+- Verified direct Telegram smoke send returned `status sent`.
+- Verified `POST /notifications/test` returned:
+
+```json
+{"status":"sent","error":null}
+```
+
+- Verified live yfinance still returns VOO and IAU latest observed bars from
+  2026-05-01 market close, with 390 intraday bars and 5 daily bars each.
+- Verified local API smoke endpoints:
+  - `GET /health`
+  - `GET /status`
+  - `POST /monitoring/run-once`
+  - `POST /notifications/test`
+- Verified `GET /health` reports monitoring-only and auto-trading disabled.
+- Static scan found no broker order-placement code paths.
+
 ### Resume Principle
 
 Before each major implementation phase:

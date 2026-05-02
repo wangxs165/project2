@@ -55,10 +55,10 @@ python3 -m unittest discover -s tests
 - [x] Implement deterministic historical backtesting runner.
 - [x] Wire monitoring service into API start/stop lifecycle.
 - [x] Test yfinance provider against live Yahoo Finance responses.
-- [ ] Keep real IBKR market-data provider optional for local TWS or IB Gateway.
+- [x] Skip real IBKR smoke testing for now; yfinance is the active Phase I provider.
 - [x] Add historical-bar ingestion storage APIs beyond the current provider calls.
-- [ ] Configure Telegram environment and run live Telegram smoke test.
-- [ ] Add live/manual smoke-test checklist results for IBKR and Telegram.
+- [x] Configure Telegram environment and run live Telegram smoke test.
+- [x] Add live/manual Phase I smoke-test checklist results.
 
 ## Known Environment Notes
 
@@ -127,9 +127,24 @@ python3 -m unittest discover -s tests
   - `GET /history/bars/{symbol}`
 - Live yfinance smoke test on 2026-05-02 returned VOO and IAU latest bars from
   the 2026-05-01 market close, with 390 intraday bars and 5 daily bars for each.
-- Telegram live smoke test is blocked until `TELEGRAM_BOT_TOKEN` and
-  `TELEGRAM_CHAT_ID` are configured in the environment.
+- Telegram live smoke test succeeded on 2026-05-02 after correcting
+  `TELEGRAM_CHAT_ID`; `POST /notifications/test` returned
+  `{"status":"sent","error":null}`.
 - Dashboard now includes stored-history controls and a stored-intraday backtest
   action.
 - Backtest output now includes signal rate, false-signal count/rate, and daily
   OHLC threshold sensitivity.
+
+## Manual Smoke-Test Checklist
+
+- [x] yfinance live data returns VOO and IAU latest observed bars.
+- [x] Telegram test notification sends successfully.
+- [x] Local API binds to `127.0.0.1:8080`.
+- [x] `GET /health` reports `monitoring_only: true` and
+  `auto_trade_enabled: false`.
+- [x] `GET /status` reports `data_provider: yfinance`.
+- [x] `POST /monitoring/run-once` safely skips signal generation while the
+  market is closed.
+- [x] Static scan found no broker order-placement code paths.
+- [x] IBKR live smoke test intentionally skipped for Phase I because yfinance
+  is the active provider.
