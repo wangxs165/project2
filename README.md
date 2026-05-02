@@ -50,6 +50,7 @@ Useful local checks:
 ```bash
 curl http://127.0.0.1:8080/health
 curl http://127.0.0.1:8080/status
+curl -X POST http://127.0.0.1:8080/prices/refresh
 curl -X POST http://127.0.0.1:8080/monitoring/run-once
 curl -X POST http://127.0.0.1:8080/monitoring/start
 curl -X POST http://127.0.0.1:8080/monitoring/stop
@@ -59,6 +60,11 @@ The default market-data provider is `yfinance`, using Yahoo Finance data for
 local monitoring. This is convenient for development and personal monitoring,
 but it has no broker-grade latency, accuracy, or uptime guarantee. Alerts are
 blocked when data is stale.
+
+`POST /prices/refresh` fetches and stores the latest available provider prices
+immediately, even outside market hours. It does not generate signals or send
+alerts. Signal generation remains market-hours gated through
+`POST /monitoring/run-once` or the background monitoring runner.
 
 Useful provider settings:
 

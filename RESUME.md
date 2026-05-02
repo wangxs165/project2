@@ -104,3 +104,6 @@ python3 -m unittest discover -s tests
 - Direct yfinance provider smoke test returned IAU and VOO prices from the
   2026-05-01 market close. Monitoring `run-once` correctly skipped provider
   fetch outside regular market hours.
+- Added manual price refresh endpoint:
+  `POST /prices/refresh`. It fetches provider prices outside market hours but
+  does not generate signals or alerts.

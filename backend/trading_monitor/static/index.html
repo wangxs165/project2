@@ -134,6 +134,9 @@
 
       <section>
         <h2>Latest Prices</h2>
+        <div class="row" style="margin-bottom: 10px">
+          <button id="refresh-prices" class="secondary">Refresh Prices</button>
+        </div>
         <pre id="prices">No price data yet.</pre>
       </section>
 
@@ -201,6 +204,10 @@
       });
       document.getElementById("stop").addEventListener("click", async () => {
         await json("/monitoring/stop", { method: "POST" });
+        refresh();
+      });
+      document.getElementById("refresh-prices").addEventListener("click", async () => {
+        await json("/prices/refresh", { method: "POST" });
         refresh();
       });
       document.getElementById("add-symbol").addEventListener("click", async () => {

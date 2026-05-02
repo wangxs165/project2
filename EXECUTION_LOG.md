@@ -310,6 +310,14 @@ IAU 86.72000122070312 2026-05-01T15:59:00-04:00 yfinance
 VOO 662.510009765625 2026-05-01T15:59:00-04:00 yfinance
 ```
 
+### Checkpoint 12: Manual Price Refresh Endpoint
+
+- Added `POST /prices/refresh`.
+- The endpoint fetches latest available provider prices for the watchlist and
+  saves them to SQLite immediately, including outside market hours.
+- The endpoint does not generate signals and does not send notifications.
+- Dashboard now has a Refresh Prices button.
+
 ### Resume Principle
 
 Before each major implementation phase:

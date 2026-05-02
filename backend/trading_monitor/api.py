@@ -19,6 +19,7 @@ def create_app(
     config: Optional[AppConfig] = None,
     storage: Optional[Storage] = None,
     monitoring_service: Optional[MonitoringService] = None,
+    market_data_provider=None,
 ):
     try:
         from fastapi import FastAPI, HTTPException
@@ -33,13 +34,15 @@ def create_app(
     app_config = config or load_config()
     app_storage = storage or Storage(app_config.db_path)
     app_storage.initialize(app_config.symbols)
-    if app_config.data_provider.name == "ibkr":
-        market_data = IbkrMarketDataClient(app_config.ibkr)
-    else:
-        market_data = YFinanceMarketDataClient(
-            interval=app_config.data_provider.intraday_interval,
-            daily_lookback_period=app_config.data_provider.daily_lookback_period,
-        )
+    market_data = market_data_provider
+    if market_data is None:
+        if app_config.data_provider.name == "ibkr":
+            market_data = IbkrMarketDataClient(app_config.ibkr)
+        else:
+            market_data = YFinanceMarketDataClient(
+                interval=app_config.data_provider.intraday_interval,
+                daily_lookback_period=app_config.data_provider.daily_lookback_period,
+            )
     service = monitoring_service or MonitoringService(
         storage=app_storage,
         config=app_config,
@@ -121,6 +124,24 @@ def create_app(
     @app.get("/prices")
     def prices():
         return {"prices": app_storage.latest_prices()}
+
+    @app.post("/prices/refresh")
+    def refresh_prices():
+        now = datetime.now(timezone.utc)
+        refreshed = []
+        errors = []
+        for symbol in app_storage.get_watchlist():
+            try:
+                price = market_data.latest_price(symbol, now)
+                app_storage.save_price(price)
+                refreshed.append(symbol)
+            except Exception as exc:
+                errors.append({"symbol": symbol, "error": str(exc)})
+        return {
+            "refreshed": refreshed,
+            "errors": errors,
+            "prices": app_storage.latest_prices(),
+        }
 
     @app.get("/signals")
     def signals(limit: int = 100):
