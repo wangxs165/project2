@@ -22,6 +22,9 @@ class MarketDataProvider(Protocol):
     def daily_closes(self, symbol: str, lookback_days: int) -> Sequence[float]:
         ...
 
+    def daily_bars(self, symbol: str, lookback_days: int) -> Sequence[Bar]:
+        ...
+
 
 class NewsProvider(Protocol):
     def context_for(self, symbol: str) -> NewsContext:

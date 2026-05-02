@@ -198,6 +198,47 @@ def create_app(
                 errors.append({"symbol": symbol, "error": str(exc)})
         return {"days": bounded_days, "history": result, "errors": errors}
 
+    @app.post("/history/refresh")
+    def refresh_history(kind: str = "daily", days: int = 5):
+        if kind not in {"intraday", "daily"}:
+            raise HTTPException(status_code=400, detail="kind must be 'intraday' or 'daily'")
+        bounded_days = max(1, min(days, 250))
+        now = datetime.now(timezone.utc)
+        refreshed = {}
+        errors = []
+        for symbol in app_storage.get_watchlist():
+            try:
+                if kind == "daily":
+                    bars = list(market_data.daily_bars(symbol, bounded_days))
+                else:
+                    bars = list(market_data.intraday_bars(symbol, now))
+                refreshed[symbol] = app_storage.save_bars(bars)
+            except Exception as exc:
+                refreshed[symbol] = 0
+                errors.append({"symbol": symbol, "error": str(exc)})
+        return {
+            "kind": kind,
+            "days": bounded_days if kind == "daily" else None,
+            "refreshed": refreshed,
+            "errors": errors,
+        }
+
+    @app.get("/history/bars/{symbol}")
+    def stored_bars(symbol: str, kind: str = "intraday", limit: int = 100):
+        if kind not in {"intraday", "daily"}:
+            raise HTTPException(status_code=400, detail="kind must be 'intraday' or 'daily'")
+        try:
+            normalized = normalize_symbol(symbol)
+            bars = app_storage.list_bars(symbol, kind=kind, limit=limit)
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+        return {
+            "symbol": normalized,
+            "kind": kind,
+            "limit": max(1, min(limit, 1000)),
+            "bars": bars,
+        }
+
     @app.post("/prices/refresh")
     def refresh_prices():
         now = datetime.now(timezone.utc)

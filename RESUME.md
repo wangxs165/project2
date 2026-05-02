@@ -58,7 +58,7 @@ python3 -m unittest discover -s tests
 - [x] Wire monitoring service into API start/stop lifecycle.
 - [ ] Test yfinance provider against live Yahoo Finance responses.
 - [ ] Keep real IBKR market-data provider optional for local TWS or IB Gateway.
-- [ ] Add historical-bar ingestion storage APIs beyond the current provider calls.
+- [x] Add historical-bar ingestion storage APIs beyond the current provider calls.
 - [ ] Add live/manual smoke-test checklist results for IBKR and Telegram.
 
 ## Known Environment Notes
@@ -122,3 +122,6 @@ python3 -m unittest discover -s tests
 - Added local launcher script:
   `./scripts/start_app.sh`. It starts the API if needed and opens Chrome to
   `http://127.0.0.1:8080`.
+- Added historical bar storage/read APIs:
+  - `POST /history/refresh`
+  - `GET /history/bars/{symbol}`

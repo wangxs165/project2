@@ -36,6 +36,23 @@ class FakeMarketDataProvider:
             delayed=True,
         )
 
+    def intraday_bars(self, symbol, now):
+        start = datetime(2026, 5, 1, 16, 0, tzinfo=timezone.utc)
+        return [
+            Bar(
+                symbol=symbol,
+                timestamp=start + timedelta(minutes=index),
+                open=100.0 + index,
+                high=101.0 + index,
+                low=99.0 + index,
+                close=100.5 + index,
+                volume=1000 + index,
+                kind="intraday",
+                source="fake",
+            )
+            for index in range(3)
+        ]
+
     def daily_bars(self, symbol, lookback_days):
         start = datetime(2026, 4, 27, 20, 0, tzinfo=timezone.utc)
         bars = []
@@ -121,6 +138,21 @@ class ApiIntegrationTests(unittest.TestCase):
             self.assertEqual(len(history.json()["history"]["VOO"]), 5)
             self.assertIn("open", history.json()["history"]["VOO"][0])
             self.assertIn("close", history.json()["history"]["VOO"][0])
+
+            refresh_history = client.post("/history/refresh?kind=daily&days=4")
+            self.assertEqual(refresh_history.status_code, 200)
+            self.assertEqual(refresh_history.json()["errors"], [])
+            self.assertEqual(refresh_history.json()["refreshed"]["VOO"], 4)
+
+            bars = client.get("/history/bars/voo?kind=daily&limit=2")
+            self.assertEqual(bars.status_code, 200)
+            self.assertEqual(bars.json()["symbol"], "VOO")
+            self.assertEqual(bars.json()["kind"], "daily")
+            self.assertEqual(len(bars.json()["bars"]), 2)
+
+            intraday_refresh = client.post("/history/refresh?kind=intraday")
+            self.assertEqual(intraday_refresh.status_code, 200)
+            self.assertEqual(intraday_refresh.json()["refreshed"]["VOO"], 3)
 
             backtest = client.get("/backtest/daily?symbol=VOO&days=35")
             self.assertEqual(backtest.status_code, 200)

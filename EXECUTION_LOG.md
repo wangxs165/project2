@@ -384,6 +384,15 @@ VOO 662.510009765625 2026-05-01T15:59:00-04:00 yfinance
   written to `.run/project2-api.pid`.
 - Browser launch can be skipped with `OPEN_BROWSER=0 ./scripts/start_app.sh`.
 
+### Checkpoint 19: Stored Historical Bar APIs
+
+- Added `Storage.save_bars` for batch upserting provider bars.
+- Added `Storage.list_bars` for reading stored bars by symbol, kind, and limit.
+- Added `POST /history/refresh` to ingest daily or intraday bars for the
+  current watchlist.
+- Added `GET /history/bars/{symbol}` to inspect stored bars from SQLite.
+- Added storage and FastAPI integration test coverage for the new behavior.
+
 ### Resume Principle
 
 Before each major implementation phase:

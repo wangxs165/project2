@@ -90,6 +90,24 @@ class StorageTests(unittest.TestCase):
         row = self.storage._conn.execute("SELECT COUNT(*) AS count FROM bars").fetchone()
         self.assertEqual(row["count"], 1)
 
+    def test_lists_saved_bars_by_symbol_kind_and_limit(self):
+        first = datetime(2026, 5, 1, 16, 0, tzinfo=timezone.utc)
+        second = first + timedelta(minutes=1)
+
+        saved = self.storage.save_bars(
+            [
+                Bar("VOO", first, open=100, high=101, low=99, close=100.5, volume=1000),
+                Bar("VOO", second, open=101, high=102, low=100, close=101.5, volume=1100),
+                Bar("IAU", first, open=50, high=51, low=49, close=50.5, volume=900),
+            ]
+        )
+
+        self.assertEqual(saved, 3)
+        bars = self.storage.list_bars("voo", limit=1)
+        self.assertEqual(len(bars), 1)
+        self.assertEqual(bars[0]["symbol"], "VOO")
+        self.assertEqual(bars[0]["timestamp"], second.isoformat())
+
 
 class RiskGateTests(unittest.TestCase):
     def setUp(self):

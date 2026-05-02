@@ -66,6 +66,8 @@ curl http://127.0.0.1:8080/health
 curl http://127.0.0.1:8080/status
 curl -X POST http://127.0.0.1:8080/prices/refresh
 curl http://127.0.0.1:8080/history/open-close
+curl -X POST 'http://127.0.0.1:8080/history/refresh?kind=daily&days=20'
+curl 'http://127.0.0.1:8080/history/bars/VOO?kind=daily&limit=10'
 curl -X POST http://127.0.0.1:8080/monitoring/run-once
 curl -X POST http://127.0.0.1:8080/monitoring/run-demo
 curl 'http://127.0.0.1:8080/backtest/daily?symbol=VOO&days=90'
@@ -86,6 +88,11 @@ alerts. Signal generation remains market-hours gated through
 `GET /history/open-close` returns daily open, close, high, low, and volume for
 the latest 5 trading days by default. The dashboard uses this for the recent
 daily open/close table.
+
+`POST /history/refresh` stores provider bars in SQLite for the watchlist. Use
+`kind=daily` with `days`, or `kind=intraday` for the latest provider intraday
+bars. `GET /history/bars/{symbol}` reads the stored bars back by symbol, kind,
+and limit.
 
 The dashboard Run Analysis button calls `POST /monitoring/run-once`. It keeps
 signal generation market-hours gated and shows the latest analysis summary,

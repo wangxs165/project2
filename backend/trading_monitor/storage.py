@@ -183,6 +183,50 @@ class Storage:
             )
             self._conn.commit()
 
+    def save_bars(self, bars: Iterable[Bar]) -> int:
+        saved = 0
+        with self._lock:
+            for bar in bars:
+                self._conn.execute(
+                    """
+                    INSERT OR REPLACE INTO bars(
+                        symbol, timestamp, kind, open, high, low, close, volume, source
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    """,
+                    (
+                        bar.symbol,
+                        bar.timestamp.isoformat(),
+                        bar.kind,
+                        bar.open,
+                        bar.high,
+                        bar.low,
+                        bar.close,
+                        bar.volume,
+                        bar.source,
+                    ),
+                )
+                saved += 1
+            self._conn.commit()
+        return saved
+
+    def list_bars(self, symbol: str, kind: str = "intraday", limit: int = 100) -> List[Dict[str, object]]:
+        normalized = normalize_symbol(symbol)
+        if kind not in {"intraday", "daily"}:
+            raise ValueError("kind must be 'intraday' or 'daily'")
+        bounded_limit = max(1, min(limit, 1000))
+        with self._lock:
+            rows = self._conn.execute(
+                """
+                SELECT *
+                FROM bars
+                WHERE symbol = ? AND kind = ?
+                ORDER BY timestamp DESC
+                LIMIT ?
+                """,
+                (normalized, kind, bounded_limit),
+            ).fetchall()
+        return [dict(row) for row in rows]
+
     def save_signal(self, signal: SignalDecision) -> None:
         with self._lock:
             self._conn.execute(
@@ -287,4 +331,3 @@ class Storage:
                 (normalized,),
             ).fetchone()
         return dict(row) if row else None
-
