@@ -51,8 +51,8 @@ python3 -m unittest discover -s tests
   `python3 -m pip install -e ".[api,yfinance]"`
 - [ ] Run FastAPI integration tests after dependency installation:
   `python3 -m unittest tests.test_api_optional`
-- [ ] Start local API/dashboard:
-  `python3 -m backend.trading_monitor.api`
+- [x] Add one-command local launcher for API/dashboard:
+  `./scripts/start_app.sh`
 - [x] Implement provider-driven monitoring cycle.
 - [x] Implement deterministic historical backtesting runner.
 - [x] Wire monitoring service into API start/stop lifecycle.
@@ -119,3 +119,6 @@ python3 -m unittest discover -s tests
 - Added `GET /backtest/daily` and a dashboard Backtest panel using synthetic
   daily-OHLC intraday paths for rough validation against open/noon/close/random
   baselines.
+- Added local launcher script:
+  `./scripts/start_app.sh`. It starts the API if needed and opens Chrome to
+  `http://127.0.0.1:8080`.

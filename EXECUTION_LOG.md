@@ -375,6 +375,15 @@ VOO 662.510009765625 2026-05-01T15:59:00-04:00 yfinance
 - The endpoint returns an explicit warning that this uses synthetic intraday
   paths from daily OHLC and is for rough validation only.
 
+### Checkpoint 18: Local App Launcher
+
+- Added `scripts/start_app.sh`.
+- The script starts the FastAPI backend if `/health` is not already available.
+- The script opens Google Chrome to the local dashboard by default.
+- Runtime logs are written to `.run/project2-api.log`; the backend PID is
+  written to `.run/project2-api.pid`.
+- Browser launch can be skipped with `OPEN_BROWSER=0 ./scripts/start_app.sh`.
+
 ### Resume Principle
 
 Before each major implementation phase:

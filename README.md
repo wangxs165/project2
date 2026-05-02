@@ -40,10 +40,24 @@ python3 -m pip install -e ".[api,yfinance]"
 Then start the local app:
 
 ```bash
-python3 -m backend.trading_monitor.api
+./scripts/start_app.sh
 ```
 
-The app binds to `127.0.0.1:8080` by default.
+The launcher starts the API if it is not already running and opens the
+dashboard in Google Chrome. The app binds to `127.0.0.1:8080` by default.
+Runtime logs are written to `.run/project2-api.log`.
+
+To start without opening a browser:
+
+```bash
+OPEN_BROWSER=0 ./scripts/start_app.sh
+```
+
+To use another local port:
+
+```bash
+APP_PORT=8081 ./scripts/start_app.sh
+```
 
 Useful local checks:
 
