@@ -209,10 +209,31 @@
         cursor: help;
         vertical-align: middle;
       }
+      .help-icon:focus {
+        outline: 2px solid var(--accent);
+        outline-offset: 2px;
+      }
       .label-with-help {
         display: inline-flex;
         align-items: center;
         gap: 2px;
+      }
+      .tooltip {
+        position: fixed;
+        z-index: 50;
+        max-width: min(320px, calc(100vw - 28px));
+        padding: 9px 10px;
+        border: 1px solid var(--line);
+        border-radius: 6px;
+        background: #151b23;
+        color: white;
+        box-shadow: 0 8px 22px rgba(20, 29, 38, 0.18);
+        font-size: 12px;
+        line-height: 1.4;
+        display: none;
+      }
+      .tooltip.is-visible {
+        display: block;
       }
       .status-ok {
         color: var(--ok);
@@ -341,11 +362,16 @@
         <div class="muted">Monitoring suggestion only. This app does not place trades.</div>
       </div>
       <div class="toolbar">
-        <button id="refresh-prices" title="Fetch the latest available prices from yfinance and save them. This can be used while the market is closed.">Refresh Prices</button>
-        <button id="run-analysis" class="secondary" title="Evaluate the current watchlist once. It only creates real signals during regular market hours.">Run Analysis</button>
-        <button id="run-demo" class="secondary" title="Create sample signals from fake market data so you can test the dashboard while the market is closed.">Demo Analysis</button>
-        <button id="start" class="secondary" title="Start automatic monitoring. The app checks the watchlist on a schedule during regular market hours.">Start Monitor</button>
-        <button id="stop" class="secondary" title="Stop automatic monitoring. This does not change saved prices, signals, or notifications.">Stop</button>
+        <button id="refresh-prices">Refresh Prices</button>
+        <span class="help-icon" tabindex="0" role="button" data-help="Fetch the latest available prices from yfinance and save them. This can be used while the market is closed.">?</span>
+        <button id="run-analysis" class="secondary">Run Analysis</button>
+        <span class="help-icon" tabindex="0" role="button" data-help="Evaluate the current watchlist once. It only creates real signals during regular market hours.">?</span>
+        <button id="run-demo" class="secondary">Demo Analysis</button>
+        <span class="help-icon" tabindex="0" role="button" data-help="Create sample signals from fake market data so you can test the dashboard while the market is closed.">?</span>
+        <button id="start" class="secondary">Start Monitor</button>
+        <span class="help-icon" tabindex="0" role="button" data-help="Start automatic monitoring. The app checks the watchlist on a schedule during regular market hours.">?</span>
+        <button id="stop" class="secondary">Stop</button>
+        <span class="help-icon" tabindex="0" role="button" data-help="Stop automatic monitoring. This does not change saved prices, signals, or notifications.">?</span>
       </div>
     </header>
     <main>
@@ -396,9 +422,12 @@
         <div class="panel-body">
           <div class="row" style="margin-bottom: 12px">
             <input id="history-symbol" maxlength="10" placeholder="SYMBOL" value="VOO" />
-            <button id="refresh-daily-history" class="secondary" title="Fetch recent daily bars, meaning each day's open, high, low, close, and volume, then save them locally.">Refresh Daily</button>
-            <button id="refresh-intraday-history" class="secondary" title="Fetch today's minute-by-minute market bars from yfinance and save them locally for later review or backtesting.">Refresh Intraday</button>
-            <button id="view-stored-history" class="secondary" title="Show the saved historical bars from the local SQLite database. This does not fetch new market data.">View Stored</button>
+            <button id="refresh-daily-history" class="secondary">Refresh Daily</button>
+            <span class="help-icon" tabindex="0" role="button" data-help="Fetch recent daily bars, meaning each day's open, high, low, close, and volume, then save them locally.">?</span>
+            <button id="refresh-intraday-history" class="secondary">Refresh Intraday</button>
+            <span class="help-icon" tabindex="0" role="button" data-help="Fetch today's minute-by-minute market bars from yfinance and save them locally for later review or backtesting.">?</span>
+            <button id="view-stored-history" class="secondary">View Stored</button>
+            <span class="help-icon" tabindex="0" role="button" data-help="Show the saved historical bars from the local SQLite database. This does not fetch new market data.">?</span>
           </div>
           <div id="stored-history" class="empty">Refresh or view stored bars.</div>
         </div>
@@ -420,8 +449,10 @@
         <div class="panel-body">
           <div class="row" style="margin-bottom: 12px">
             <input id="backtest-symbol" maxlength="10" placeholder="SYMBOL" value="VOO" />
-            <button id="run-backtest" class="secondary" title="Estimate how the signal rules would have performed recently by using daily open/high/low/close data. This is a rough check, not proof.">Run Backtest</button>
-            <button id="run-stored-backtest" class="secondary" title="Test the signal rules against intraday bars already saved by this app. This is more realistic, but only covers data you have stored.">Stored Intraday</button>
+            <button id="run-backtest" class="secondary">Run Backtest</button>
+            <span class="help-icon" tabindex="0" role="button" data-help="Estimate how the signal rules would have performed recently by using daily open/high/low/close data. This is a rough check, not proof.">?</span>
+            <button id="run-stored-backtest" class="secondary">Stored Intraday</button>
+            <span class="help-icon" tabindex="0" role="button" data-help="Test the signal rules against intraday bars already saved by this app. This is more realistic, but only covers data you have stored.">?</span>
           </div>
           <div id="backtest" class="empty">No backtest run yet.</div>
         </div>
@@ -434,6 +465,7 @@
         <div id="notifications" class="panel-body"></div>
       </section>
     </main>
+    <div id="tooltip" class="tooltip" role="tooltip"></div>
     <script>
       async function json(path, options) {
         const response = await fetch(path, options);
@@ -630,8 +662,17 @@
         `;
       }
 
+      function escapeAttr(value) {
+        return String(value)
+          .replace(/&/g, "&amp;")
+          .replace(/"/g, "&quot;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;");
+      }
+
       function helpIcon(text) {
-        return `<span class="help-icon" title="${text}" aria-label="${text}">?</span>`;
+        const escaped = escapeAttr(text);
+        return `<span class="help-icon" tabindex="0" role="button" data-help="${escaped}" aria-label="${escaped}">?</span>`;
       }
 
       function scoreLabel(key) {
@@ -672,6 +713,28 @@
 
       function term(text, helpText) {
         return `<span class="label-with-help">${text}${helpIcon(helpText)}</span>`;
+      }
+
+      function showTooltip(anchor) {
+        const text = anchor.dataset.help;
+        if (!text) return;
+        const tooltip = document.getElementById("tooltip");
+        tooltip.textContent = text;
+        tooltip.classList.add("is-visible");
+        const anchorBox = anchor.getBoundingClientRect();
+        const tooltipBox = tooltip.getBoundingClientRect();
+        const left = Math.min(
+          Math.max(14, anchorBox.left + anchorBox.width / 2 - tooltipBox.width / 2),
+          window.innerWidth - tooltipBox.width - 14
+        );
+        const below = anchorBox.bottom + 8;
+        const top = below + tooltipBox.height < window.innerHeight ? below : Math.max(14, anchorBox.top - tooltipBox.height - 8);
+        tooltip.style.left = `${left}px`;
+        tooltip.style.top = `${top}px`;
+      }
+
+      function hideTooltip() {
+        document.getElementById("tooltip").classList.remove("is-visible");
       }
 
       function signalCards(signals) {
@@ -990,6 +1053,32 @@
         if (!symbol) return;
         await json(`/symbols/${symbol}`, { method: "DELETE" });
         await refresh();
+      });
+      document.addEventListener("mouseover", (event) => {
+        const help = event.target.closest("[data-help]");
+        if (help) showTooltip(help);
+      });
+      document.addEventListener("focusin", (event) => {
+        const help = event.target.closest("[data-help]");
+        if (help) showTooltip(help);
+      });
+      document.addEventListener("mouseout", (event) => {
+        if (event.target.closest("[data-help]")) hideTooltip();
+      });
+      document.addEventListener("focusout", (event) => {
+        if (event.target.closest("[data-help]")) hideTooltip();
+      });
+      document.addEventListener("click", (event) => {
+        const help = event.target.closest("[data-help]");
+        if (help) {
+          event.stopPropagation();
+          showTooltip(help);
+          return;
+        }
+        hideTooltip();
+      });
+      document.addEventListener("keydown", (event) => {
+        if (event.key === "Escape") hideTooltip();
       });
 
       refresh();

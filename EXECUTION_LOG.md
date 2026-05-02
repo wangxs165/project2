@@ -446,6 +446,9 @@ VOO 662.510009765625 2026-05-01T15:59:00-04:00 yfinance
   preserving detailed explanations in hover help.
 - Added hover help for backtest result terms such as false signal rate,
   threshold, signal days, and delta versus signal/open.
+- Replaced native browser title-only help with an in-app tooltip that appears on
+  hover, focus, or click.
+- Added visible help icons beside the Run Backtest and Stored Intraday buttons.
 
 ### Resume Principle
 
