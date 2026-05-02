@@ -6,12 +6,22 @@ PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
 cd "$PROJECT_ROOT"
 
+OVERRIDE_APP_HOST="${APP_HOST-}"
+OVERRIDE_APP_PORT="${APP_PORT-}"
+OVERRIDE_OPEN_BROWSER="${OPEN_BROWSER-}"
+OVERRIDE_PYTHON="${PYTHON-}"
+
 if [[ -f "$PROJECT_ROOT/.env" ]]; then
   set -a
   # shellcheck disable=SC1091
   source "$PROJECT_ROOT/.env"
   set +a
 fi
+
+if [[ -n "$OVERRIDE_APP_HOST" ]]; then APP_HOST="$OVERRIDE_APP_HOST"; fi
+if [[ -n "$OVERRIDE_APP_PORT" ]]; then APP_PORT="$OVERRIDE_APP_PORT"; fi
+if [[ -n "$OVERRIDE_OPEN_BROWSER" ]]; then OPEN_BROWSER="$OVERRIDE_OPEN_BROWSER"; fi
+if [[ -n "$OVERRIDE_PYTHON" ]]; then PYTHON="$OVERRIDE_PYTHON"; fi
 
 APP_HOST="${APP_HOST:-127.0.0.1}"
 APP_PORT="${APP_PORT:-8080}"
