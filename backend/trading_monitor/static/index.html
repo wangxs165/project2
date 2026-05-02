@@ -228,6 +228,62 @@
         font-size: 13px;
         font-weight: 600;
       }
+      .signal-list {
+        display: grid;
+        gap: 12px;
+      }
+      .signal-card {
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        overflow: hidden;
+        background: #fff;
+      }
+      .signal-head {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        align-items: flex-start;
+        padding: 11px 12px;
+        background: #fbfcfd;
+        border-bottom: 1px solid var(--line);
+      }
+      .signal-meta {
+        display: grid;
+        gap: 4px;
+      }
+      .signal-body {
+        padding: 12px;
+        display: grid;
+        gap: 12px;
+      }
+      .reason-list {
+        margin: 0;
+        padding-left: 18px;
+        color: #334150;
+        font-size: 13px;
+      }
+      .reason-list li {
+        margin: 4px 0;
+      }
+      .score-grid {
+        display: grid;
+        gap: 8px;
+        grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+      }
+      .score-item {
+        border: 1px solid var(--line);
+        border-radius: 6px;
+        padding: 8px;
+        background: #fbfcfd;
+      }
+      .score-item span {
+        display: block;
+        color: var(--muted);
+        font-size: 12px;
+      }
+      .score-item strong {
+        font-size: 14px;
+      }
       @media (max-width: 820px) {
         header,
         main {
@@ -259,6 +315,7 @@
       </div>
       <div class="toolbar">
         <button id="refresh-prices">Refresh Prices</button>
+        <button id="run-analysis" class="secondary">Run Analysis</button>
         <button id="start" class="secondary">Start Monitor</button>
         <button id="stop" class="secondary">Stop</button>
       </div>
@@ -306,6 +363,7 @@
       <section>
         <div class="panel-head">
           <h2>Signals</h2>
+          <span id="analysis-summary" class="muted">No analysis run yet</span>
         </div>
         <div id="signals" class="panel-body"></div>
       </section>
@@ -379,27 +437,36 @@
                 <th style="width: 16%">Symbol</th>
                 <th class="num" style="width: 18%">Latest</th>
                 <th class="num" style="width: 16%">Volume</th>
-                <th style="width: 18%">Source</th>
+                <th style="width: 18%">Freshness</th>
                 <th>Source Time</th>
               </tr>
             </thead>
             <tbody>
               ${rows
-                .map(
-                  (row) => `
+                .map((row) => {
+                  const freshness = freshnessBadge(row.source_ts);
+                  return `
                     <tr>
                       <td><strong>${row.symbol}</strong></td>
                       <td class="num">${money(row.price)}</td>
                       <td class="num">${number(row.volume)}</td>
-                      <td>${row.source}${row.delayed ? " / delayed" : ""}</td>
+                      <td><span class="badge ${freshness.className}">${freshness.label}</span></td>
                       <td>${shortTime(row.source_ts)}</td>
                     </tr>
-                  `
-                )
+                  `;
+                })
                 .join("")}
             </tbody>
           </table>
         `;
+      }
+
+      function freshnessBadge(sourceTime) {
+        if (!sourceTime) return { label: "unknown", className: "status-warn" };
+        const ageHours = (Date.now() - new Date(sourceTime).getTime()) / 36e5;
+        if (ageHours <= 0.25) return { label: "fresh", className: "status-ok" };
+        if (ageHours <= 72) return { label: "market closed", className: "status-warn" };
+        return { label: "stale", className: "status-bad" };
       }
 
       function historyView(history) {
@@ -467,6 +534,83 @@
         `;
       }
 
+      function scoreLabel(key) {
+        return key
+          .split("_")
+          .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+          .join(" ");
+      }
+
+      function signalCards(signals) {
+        if (!signals || !signals.length) {
+          return `<div class="empty">No analysis results yet. Run Analysis during market hours to generate signals.</div>`;
+        }
+        return `
+          <div class="signal-list">
+            ${signals
+              .map((signal) => {
+                const scoreBreakdown = signal.score_breakdown || {};
+                const alertClass = signal.should_alert ? "status-ok" : "status-warn";
+                return `
+                  <div class="signal-card">
+                    <div class="signal-head">
+                      <div class="signal-meta">
+                        <strong>${signal.symbol}</strong>
+                        <span class="muted">${signal.band}</span>
+                      </div>
+                      <span class="badge ${alertClass}">${signal.confidence} / 100</span>
+                    </div>
+                    <div class="signal-body">
+                      <div class="score-grid">
+                        <div class="score-item">
+                          <span>Current price</span>
+                          <strong>${money(signal.current_price)}</strong>
+                        </div>
+                        <div class="score-item">
+                          <span>Suggested price</span>
+                          <strong>${money(signal.suggested_buy_price)}</strong>
+                        </div>
+                        <div class="score-item">
+                          <span>Alert status</span>
+                          <strong>${signal.should_alert ? "Qualified" : "No alert"}</strong>
+                        </div>
+                        <div class="score-item">
+                          <span>Created</span>
+                          <strong>${shortTime(signal.created_at)}</strong>
+                        </div>
+                      </div>
+                      <ul class="reason-list">
+                        ${(signal.reasons || []).map((reason) => `<li>${reason}</li>`).join("")}
+                      </ul>
+                      <div class="score-grid">
+                        ${Object.keys(scoreBreakdown)
+                          .map(
+                            (key) => `
+                              <div class="score-item">
+                                <span>${scoreLabel(key)}</span>
+                                <strong>${Number(scoreBreakdown[key]).toFixed(1)}</strong>
+                              </div>
+                            `
+                          )
+                          .join("")}
+                      </div>
+                    </div>
+                  </div>
+                `;
+              })
+              .join("")}
+          </div>
+        `;
+      }
+
+      function analysisText(status) {
+        const result = status.runner.last_cycle_result;
+        if (!result) return "No analysis run yet";
+        if (!result.market_open) return "Skipped: market closed";
+        if (result.errors && result.errors.length) return `${result.errors.length} errors`;
+        return `${result.generated_signals} signals, ${result.sent_notifications} alerts sent`;
+      }
+
       async function refresh() {
         const [status, symbols, prices, history, signals, notifications] = await Promise.all([
           json("/status"),
@@ -492,6 +636,7 @@
             status.runner.last_cycle_result ? status.runner.last_cycle_result.market_open : "n/a"
           }</strong></div>
         `;
+        document.getElementById("analysis-summary").textContent = analysisText(status);
 
         document.getElementById("symbols").innerHTML = symbols.symbols
           .map(
@@ -512,18 +657,7 @@
 
         document.getElementById("history").innerHTML = historyView(history.history);
 
-        document.getElementById("signals").innerHTML = compactList(
-          signals.signals.slice(0, 5),
-          "No signals yet.",
-          (signal) => `
-            <tr>
-              <td><strong>${signal.symbol}</strong></td>
-              <td>${signal.band}</td>
-              <td class="num">${signal.confidence} / 100</td>
-              <td>${shortTime(signal.created_at)}</td>
-            </tr>
-          `
-        );
+        document.getElementById("signals").innerHTML = signalCards(signals.signals.slice(0, 5));
 
         document.getElementById("notifications").innerHTML = compactList(
           notifications.notifications.slice(0, 5),
@@ -563,6 +697,12 @@
       document.getElementById("refresh-prices").addEventListener("click", async (event) => {
         await runWithDisabled(event.currentTarget, async () => {
           await json("/prices/refresh", { method: "POST" });
+          await refresh();
+        });
+      });
+      document.getElementById("run-analysis").addEventListener("click", async (event) => {
+        await runWithDisabled(event.currentTarget, async () => {
+          await json("/monitoring/run-once", { method: "POST" });
           await refresh();
         });
       });

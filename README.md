@@ -71,6 +71,10 @@ alerts. Signal generation remains market-hours gated through
 the latest 5 trading days by default. The dashboard uses this for the recent
 daily open/close table.
 
+The dashboard Run Analysis button calls `POST /monitoring/run-once`. It keeps
+signal generation market-hours gated and shows the latest analysis summary,
+signal reasons, suggested price, confidence, and score breakdown.
+
 Useful provider settings:
 
 ```bash

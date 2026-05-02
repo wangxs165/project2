@@ -110,3 +110,5 @@ python3 -m unittest discover -s tests
 - Added recent daily history endpoint:
   `GET /history/open-close`. The dashboard shows the latest 5 trading days'
   open and close values in a table.
+- Dashboard now includes a Run Analysis button and readable signal cards with
+  reasons, suggested price, alert status, and score breakdown.

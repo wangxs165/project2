@@ -329,6 +329,19 @@ VOO 662.510009765625 2026-05-01T15:59:00-04:00 yfinance
   - compact status metrics
   - compact signal and notification tables
 
+### Checkpoint 14: Run Analysis Dashboard Workflow
+
+- Added a Run Analysis button that calls `POST /monitoring/run-once`.
+- Added analysis summary text for the last run, including closed-market skips.
+- Replaced compact signal rows with detailed signal cards:
+  - current price
+  - suggested buy price
+  - alert status
+  - confidence
+  - reasoning bullets
+  - component score breakdown
+- Added price freshness badges for fresh, market-closed, and stale source data.
+
 ### Resume Principle
 
 Before each major implementation phase:
