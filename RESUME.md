@@ -88,7 +88,9 @@ python3 -m unittest discover -s tests
   - `POST /monitoring/start`
   - `POST /monitoring/stop`
 - Current venv test result:
-  `.venv/bin/python -m pytest -q` -> `62 passed, 1 skipped`.
+  `.venv/bin/python -m pytest -q` -> `66 passed, 1 skipped`.
+- Current unittest result:
+  `python3 -m unittest discover -s tests` -> `67 tests OK, 1 skipped`.
 - `ib_insync` is installed: `0.9.86`.
 - No local listener was detected on common IBKR ports `7496`, `7497`, `4001`,
   or `4002`. Start TWS or IB Gateway with API access enabled before live IBKR
@@ -97,3 +99,8 @@ python3 -m unittest discover -s tests
   `python3 -m backend.trading_monitor.ibkr_probe --symbol VOO`
 - Default provider changed to yfinance on 2026-05-01 so development can proceed
   without IB Gateway. IBKR is optional via `DATA_PROVIDER=ibkr`.
+- yfinance is installed and imports successfully in `.venv`.
+- Local API verified on `http://127.0.0.1:8080`.
+- Direct yfinance provider smoke test returned IAU and VOO prices from the
+  2026-05-01 market close. Monitoring `run-once` correctly skipped provider
+  fetch outside regular market hours.

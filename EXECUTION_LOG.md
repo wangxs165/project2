@@ -271,6 +271,45 @@ OK (skipped=1)
 - Documented yfinance latency/risk tradeoffs in `README.md` and kept alerts
   protected by stale-data checks.
 
+### Checkpoint 11: yfinance Dependency and API Smoke Test
+
+- Installed yfinance into `.venv` with:
+
+```text
+.venv/bin/python -m pip install -e ".[api,yfinance]"
+```
+
+- Cleared macOS quarantine metadata from the project venv native libraries so
+  NumPy/yfinance could import.
+- Reinstalled missing `pydantic-core` binary dependency so FastAPI imports work.
+- Verified tests:
+
+```text
+.venv/bin/python -m pytest -q
+66 passed, 1 skipped
+
+python3 -m unittest discover -s tests
+Ran 67 tests
+OK (skipped=1)
+```
+
+- Started the local API at `http://127.0.0.1:8080`.
+- Verified:
+  - `GET /health`
+  - `GET /status`
+  - `GET /symbols`
+  - `POST /monitoring/run-once`
+  - `GET /prices`
+  - `GET /signals`
+- `POST /monitoring/run-once` correctly returned `market_open:false` and did
+  not fetch data because the test ran outside regular U.S. market hours.
+- Verified direct yfinance provider fetch for tracked symbols:
+
+```text
+IAU 86.72000122070312 2026-05-01T15:59:00-04:00 yfinance
+VOO 662.510009765625 2026-05-01T15:59:00-04:00 yfinance
+```
+
 ### Resume Principle
 
 Before each major implementation phase:
