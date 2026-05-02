@@ -53,6 +53,7 @@ curl http://127.0.0.1:8080/status
 curl -X POST http://127.0.0.1:8080/prices/refresh
 curl http://127.0.0.1:8080/history/open-close
 curl -X POST http://127.0.0.1:8080/monitoring/run-once
+curl -X POST http://127.0.0.1:8080/monitoring/run-demo
 curl -X POST http://127.0.0.1:8080/monitoring/start
 curl -X POST http://127.0.0.1:8080/monitoring/stop
 ```
@@ -74,6 +75,10 @@ daily open/close table.
 The dashboard Run Analysis button calls `POST /monitoring/run-once`. It keeps
 signal generation market-hours gated and shows the latest analysis summary,
 signal reasons, suggested price, confidence, and score breakdown.
+
+The dashboard Demo Analysis button calls `POST /monitoring/run-demo`. It uses
+deterministic sample market data at an in-hours timestamp so the signal cards
+can be tested while the market is closed. It does not send Telegram alerts.
 
 Useful provider settings:
 

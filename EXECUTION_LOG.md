@@ -342,6 +342,17 @@ VOO 662.510009765625 2026-05-01T15:59:00-04:00 yfinance
   - component score breakdown
 - Added price freshness badges for fresh, market-closed, and stale source data.
 
+### Checkpoint 15: Closed-Market Demo Analysis
+
+- Added deterministic demo market data provider in `backend/trading_monitor/demo.py`.
+- Added `POST /monitoring/run-demo` for exercising signal generation while the
+  market is closed.
+- Demo analysis uses an in-hours timestamp and writes demo signals directly, so
+  it can populate signal cards without sending real notifications.
+- Dashboard now has a Demo Analysis button.
+- Fixed suggested-price rounding so cent rounding never pushes the suggested
+  price above the current price.
+
 ### Resume Principle
 
 Before each major implementation phase:

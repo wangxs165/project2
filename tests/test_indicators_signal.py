@@ -160,12 +160,16 @@ class SignalEngineTests(unittest.TestCase):
 
         self.assertEqual(price, 100)
 
+    def test_suggested_buy_price_rounding_never_exceeds_current_price(self):
+        price = calculate_suggested_buy_price(current_price=33.048, vwap_value=None, support_price=None)
+
+        self.assertLessEqual(price, 33.048)
+
     def test_suggested_buy_price_uses_vwap_or_support_when_lower(self):
         price = calculate_suggested_buy_price(current_price=100, vwap_value=99, support_price=101)
 
-        self.assertEqual(price, round(99 * 0.997, 2))
+        self.assertEqual(price, 98.7)
 
 
 if __name__ == "__main__":
     unittest.main()
-

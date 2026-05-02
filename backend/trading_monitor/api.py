@@ -6,10 +6,12 @@ from pathlib import Path
 from typing import Dict, Optional
 
 from .config import AppConfig, load_config
+from .demo import DemoMarketDataProvider, demo_market_time
 from .ibkr import IbkrMarketDataClient
 from .monitoring import MonitoringService, NeutralNewsProvider
 from .models import DISCLAIMER, NotificationRecord, ScoreBreakdown, SignalDecision, normalize_symbol
 from .runtime import BackgroundMonitoringRunner, MonitoringRuntime
+from .signal_engine import SignalInput, evaluate_buy_window
 from .storage import Storage
 from .telegram import TelegramClient
 from .yahoo import YFinanceMarketDataClient
@@ -120,6 +122,51 @@ def create_app(
     @app.post("/monitoring/run-once")
     def run_monitoring_once():
         return runtime.run_once()
+
+    @app.post("/monitoring/run-demo")
+    def run_demo_analysis():
+        demo_time = demo_market_time(datetime.now(timezone.utc))
+        demo_provider = DemoMarketDataProvider()
+        generated = 0
+        errors = []
+        for symbol in app_storage.get_watchlist():
+            try:
+                price = demo_provider.latest_price(symbol, demo_time)
+                bars = list(demo_provider.intraday_bars(symbol, demo_time))
+                daily_closes = list(demo_provider.daily_closes(symbol, 220))
+                app_storage.save_price(price)
+                for bar in bars:
+                    app_storage.save_bar(bar)
+                signal = evaluate_buy_window(
+                    SignalInput(
+                        symbol=symbol,
+                        current_price=price.price,
+                        intraday_bars=bars,
+                        daily_closes=daily_closes,
+                        news_context=NeutralNewsProvider().context_for(symbol),
+                        created_at=demo_time,
+                        min_confidence=app_config.alerts.min_confidence,
+                        market_is_open=True,
+                        data_is_stale=False,
+                        in_open_avoidance_window=False,
+                    )
+                )
+                app_storage.save_signal(signal)
+                generated += 1
+            except Exception as exc:
+                errors.append(f"{symbol}: {exc}")
+        return {
+            "demo": True,
+            "market_time": demo_time.isoformat(),
+            "result": {
+                "evaluated_symbols": len(app_storage.get_watchlist()),
+                "generated_signals": generated,
+                "sent_notifications": 0,
+                "blocked_notifications": 0,
+                "errors": errors,
+                "market_open": True,
+            },
+        }
 
     @app.get("/prices")
     def prices():

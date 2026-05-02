@@ -104,6 +104,12 @@ class ApiIntegrationTests(unittest.TestCase):
             self.assertEqual(run_once.status_code, 200)
             self.assertGreaterEqual(run_once.json()["runner"]["cycles_completed"], 1)
 
+            demo = client.post("/monitoring/run-demo")
+            self.assertEqual(demo.status_code, 200)
+            self.assertTrue(demo.json()["demo"])
+            self.assertTrue(demo.json()["result"]["market_open"])
+            self.assertGreaterEqual(demo.json()["result"]["generated_signals"], 1)
+
             refresh_prices = client.post("/prices/refresh")
             self.assertEqual(refresh_prices.status_code, 200)
             self.assertEqual(refresh_prices.json()["errors"], [])

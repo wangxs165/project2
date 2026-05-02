@@ -6,6 +6,7 @@ from zoneinfo import ZoneInfo
 
 from backend.trading_monitor.backtest import run_intraday_backtest
 from backend.trading_monitor.config import AppConfig
+from backend.trading_monitor.demo import DemoMarketDataProvider
 from backend.trading_monitor.models import Bar, NewsContext, NotificationRecord, PriceUpdate
 from backend.trading_monitor.monitoring import MonitoringService
 from backend.trading_monitor.storage import Storage
@@ -144,6 +145,18 @@ class MonitoringServiceTests(unittest.TestCase):
         self.assertEqual(second.sent_notifications, 0)
         self.assertEqual(second.blocked_notifications, 1)
 
+    def test_demo_provider_generates_usable_market_data(self):
+        provider = DemoMarketDataProvider()
+        now = datetime(2026, 5, 1, 9, 0, tzinfo=PACIFIC)
+
+        price = provider.latest_price("VOO", now)
+        bars = provider.intraday_bars("VOO", now)
+        daily = provider.daily_closes("VOO", 20)
+
+        self.assertEqual(price.source, "demo")
+        self.assertGreater(len(bars), 3)
+        self.assertEqual(len(daily), 20)
+
 
 class BacktestTests(unittest.TestCase):
     def test_backtest_generates_signal_and_baseline_deltas(self):
@@ -202,4 +215,3 @@ class BacktestTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
-

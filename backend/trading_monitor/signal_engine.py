@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import datetime
+from math import floor
 from typing import List, Optional, Sequence
 
 from .indicators import (
@@ -54,7 +55,8 @@ def calculate_suggested_buy_price(
         candidates.append(vwap_value * 0.997)
     if support_price and support_price > 0:
         candidates.append(support_price * 1.002)
-    return round(min(candidates), precision)
+    scale = 10**precision
+    return floor(min(candidates) * scale) / scale
 
 
 def _intraday_component(current_price: float, bars: Sequence[Bar]) -> float:
@@ -184,4 +186,3 @@ def evaluate_buy_window(signal_input: SignalInput) -> SignalDecision:
         score_breakdown=breakdown,
         created_at=signal_input.created_at,
     )
-

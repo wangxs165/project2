@@ -112,3 +112,5 @@ python3 -m unittest discover -s tests
   open and close values in a table.
 - Dashboard now includes a Run Analysis button and readable signal cards with
   reasons, suggested price, alert status, and score breakdown.
+- Added `POST /monitoring/run-demo` plus a Demo Analysis dashboard button for
+  closed-market UI testing with deterministic sample data and no real alerts.

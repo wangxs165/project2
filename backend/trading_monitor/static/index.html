@@ -316,6 +316,7 @@
       <div class="toolbar">
         <button id="refresh-prices">Refresh Prices</button>
         <button id="run-analysis" class="secondary">Run Analysis</button>
+        <button id="run-demo" class="secondary">Demo Analysis</button>
         <button id="start" class="secondary">Start Monitor</button>
         <button id="stop" class="secondary">Stop</button>
       </div>
@@ -543,7 +544,7 @@
 
       function signalCards(signals) {
         if (!signals || !signals.length) {
-          return `<div class="empty">No analysis results yet. Run Analysis during market hours to generate signals.</div>`;
+          return `<div class="empty">No analysis results yet. Use Demo Analysis to test signal cards while the market is closed.</div>`;
         }
         return `
           <div class="signal-list">
@@ -703,6 +704,12 @@
       document.getElementById("run-analysis").addEventListener("click", async (event) => {
         await runWithDisabled(event.currentTarget, async () => {
           await json("/monitoring/run-once", { method: "POST" });
+          await refresh();
+        });
+      });
+      document.getElementById("run-demo").addEventListener("click", async (event) => {
+        await runWithDisabled(event.currentTarget, async () => {
+          await json("/monitoring/run-demo", { method: "POST" });
           await refresh();
         });
       });
