@@ -62,8 +62,9 @@ else
 
   mkdir -p "$RUN_DIR"
   echo "Starting Project2 API at $APP_URL"
-  APP_HOST="$APP_HOST" APP_PORT="$APP_PORT" nohup "$PYTHON" -m backend.trading_monitor.api >"$LOG_FILE" 2>&1 &
+  APP_HOST="$APP_HOST" APP_PORT="$APP_PORT" nohup "$PYTHON" -m backend.trading_monitor.api >"$LOG_FILE" 2>&1 </dev/null &
   echo "$!" >"$PID_FILE"
+  disown "$(<"$PID_FILE")" 2>/dev/null || true
 
   for _ in {1..30}; do
     if is_healthy; then
