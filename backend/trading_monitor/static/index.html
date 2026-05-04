@@ -272,21 +272,22 @@
       }
       .signal-list {
         display: grid;
-        gap: 12px;
+        gap: 14px;
       }
       .signal-card {
-        border: 1px solid var(--line);
+        border: 1px solid #c6d3dc;
         border-radius: 8px;
         overflow: hidden;
         background: #fff;
+        box-shadow: 0 2px 8px rgba(20, 29, 38, 0.08);
       }
       .signal-head {
         display: flex;
         justify-content: space-between;
         gap: 12px;
         align-items: flex-start;
-        padding: 11px 12px;
-        background: #fbfcfd;
+        padding: 13px 14px;
+        background: #f5faf8;
         border-bottom: 1px solid var(--line);
       }
       .signal-meta {
@@ -294,9 +295,9 @@
         gap: 4px;
       }
       .signal-body {
-        padding: 12px;
+        padding: 14px;
         display: grid;
-        gap: 12px;
+        gap: 14px;
       }
       .reason-list {
         margin: 0;
@@ -310,7 +311,7 @@
       .score-grid {
         display: grid;
         gap: 8px;
-        grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
       }
       .score-item {
         border: 1px solid var(--line);
@@ -433,7 +434,7 @@
         </div>
       </section>
 
-      <section>
+      <section class="span-2">
         <div class="panel-head">
           <h2>Signals</h2>
           <span id="analysis-summary" class="muted">No analysis run yet</span>

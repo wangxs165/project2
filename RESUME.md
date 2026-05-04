@@ -147,6 +147,10 @@ python3 -m unittest discover -s tests
 - Fixed latest-price selection to use the newest inserted price row per symbol,
   avoiding stale dashboard prices when UTC and Pacific timestamp strings are
   mixed in SQLite.
+- Latest Prices and Signals now only return active watchlist symbols, so old
+  persisted data for removed symbols is hidden from the dashboard.
+- The Signals dashboard section now spans the full width and uses more prominent
+  cards for easier review.
 
 ## Manual Smoke-Test Checklist
 

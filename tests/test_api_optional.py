@@ -127,10 +127,21 @@ class ApiIntegrationTests(unittest.TestCase):
             self.assertTrue(demo.json()["result"]["market_open"])
             self.assertGreaterEqual(demo.json()["result"]["generated_signals"], 1)
 
+            removed = client.delete("/symbols/SPY")
+            self.assertTrue(removed.json()["removed"])
+
             refresh_prices = client.post("/prices/refresh")
             self.assertEqual(refresh_prices.status_code, 200)
             self.assertEqual(refresh_prices.json()["errors"], [])
             self.assertIn("VOO", refresh_prices.json()["prices"])
+            self.assertNotIn("SPY", refresh_prices.json()["prices"])
+
+            listed_prices = client.get("/prices")
+            self.assertNotIn("SPY", listed_prices.json()["prices"])
+
+            listed_signals = client.get("/signals")
+            self.assertTrue(listed_signals.json()["signals"])
+            self.assertNotIn("SPY", {signal["symbol"] for signal in listed_signals.json()["signals"]})
 
             history = client.get("/history/open-close")
             self.assertEqual(history.status_code, 200)

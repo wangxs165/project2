@@ -234,7 +234,14 @@ def create_app(
 
     @app.get("/prices")
     def prices():
-        return {"prices": app_storage.latest_prices()}
+        watchlist = set(app_storage.get_watchlist())
+        return {
+            "prices": {
+                symbol: price
+                for symbol, price in app_storage.latest_prices().items()
+                if symbol in watchlist
+            }
+        }
 
     @app.get("/history/open-close")
     def open_close_history(days: int = 5):
@@ -307,7 +314,8 @@ def create_app(
         now = datetime.now(timezone.utc)
         refreshed = []
         errors = []
-        for symbol in app_storage.get_watchlist():
+        watchlist = set(app_storage.get_watchlist())
+        for symbol in watchlist:
             try:
                 price = market_data.latest_price(symbol, now)
                 app_storage.save_price(price)
@@ -317,12 +325,23 @@ def create_app(
         return {
             "refreshed": refreshed,
             "errors": errors,
-            "prices": app_storage.latest_prices(),
+            "prices": {
+                symbol: price
+                for symbol, price in app_storage.latest_prices().items()
+                if symbol in watchlist
+            },
         }
 
     @app.get("/signals")
     def signals(limit: int = 100):
-        return {"signals": app_storage.list_signals(limit=limit)}
+        watchlist = set(app_storage.get_watchlist())
+        filtered = [
+            signal
+            for signal in app_storage.list_signals(limit=max(limit, 1000))
+            if signal["symbol"] in watchlist
+        ]
+        bounded_limit = max(1, min(limit, 100))
+        return {"signals": filtered[:bounded_limit]}
 
     @app.get("/notifications")
     def notifications(limit: int = 100):

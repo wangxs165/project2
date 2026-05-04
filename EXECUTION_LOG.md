@@ -470,6 +470,15 @@ VOO 662.510009765625 2026-05-01T15:59:00-04:00 yfinance
   symbol.
 - Added a regression test for mixed-offset latest-price ordering.
 
+### Checkpoint 24: Watchlist-Scoped Dashboard Data
+
+- Updated `GET /prices`, `POST /prices/refresh`, and `GET /signals` to return
+  only active watchlist symbols.
+- Added API integration coverage that removes a symbol after demo data exists
+  and verifies old prices/signals are hidden.
+- Expanded the Signals dashboard section to full width and made signal cards
+  more visually prominent.
+
 ### Resume Principle
 
 Before each major implementation phase:
