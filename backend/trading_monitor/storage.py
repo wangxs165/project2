@@ -151,11 +151,11 @@ class Storage:
                 SELECT p.*
                 FROM prices p
                 JOIN (
-                    SELECT symbol, MAX(received_ts) AS received_ts
+                    SELECT symbol, MAX(id) AS id
                     FROM prices
                     GROUP BY symbol
                 ) latest
-                    ON latest.symbol = p.symbol AND latest.received_ts = p.received_ts
+                    ON latest.symbol = p.symbol AND latest.id = p.id
                 ORDER BY p.symbol
                 """
             ).fetchall()

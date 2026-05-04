@@ -450,6 +450,26 @@ VOO 662.510009765625 2026-05-01T15:59:00-04:00 yfinance
   hover, focus, or click.
 - Added visible help icons beside the Run Backtest and Stored Intraday buttons.
 
+### Checkpoint 23: Live Market-Hours Data Test
+
+- Ran live tests during regular U.S. market hours on 2026-05-04.
+- Direct yfinance provider checks returned fresh market bars:
+  - VOO: latest bar around 2026-05-04 09:46 Eastern, about 60 seconds old.
+  - IAU: latest bar around 2026-05-04 09:46 Eastern, about 60 seconds old.
+- The background monitor was already running and reported:
+  - `market_open: true`
+  - no provider errors
+  - generated signal records for tracked symbols
+  - no notifications sent because confidence scores were below threshold
+- `POST /monitoring/run-once` in a foreground smoke server returned
+  `market_open: true`, evaluated the active watchlist, generated signals, and
+  returned no errors.
+- Found and fixed a latest-price storage ordering issue. SQLite had mixed UTC
+  and Pacific ISO timestamp strings, so `MAX(received_ts)` could select an older
+  row. `Storage.latest_prices` now selects the highest inserted price row id per
+  symbol.
+- Added a regression test for mixed-offset latest-price ordering.
+
 ### Resume Principle
 
 Before each major implementation phase:

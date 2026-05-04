@@ -80,6 +80,19 @@ class StorageTests(unittest.TestCase):
         self.assertEqual(len(notifications), 1)
         self.assertEqual(self.storage.count_notifications_for_day("VOO", "2026-05-01"), 1)
 
+    def test_latest_prices_use_most_recent_insert_not_lexical_timestamp(self):
+        utc_time = datetime(2026, 5, 4, 13, 41, tzinfo=timezone.utc)
+        pacific_time = datetime(2026, 5, 4, 6, 47, tzinfo=timezone(timedelta(hours=-7)))
+
+        self.storage.save_price(
+            PriceUpdate(symbol="VOO", price=100, source_ts=utc_time, received_ts=utc_time, source="test")
+        )
+        self.storage.save_price(
+            PriceUpdate(symbol="VOO", price=101, source_ts=pacific_time, received_ts=pacific_time, source="test")
+        )
+
+        self.assertEqual(self.storage.latest_prices()["VOO"]["price"], 101)
+
     def test_bar_upsert_is_idempotent(self):
         now = datetime(2026, 5, 1, 16, 0, tzinfo=timezone.utc)
         bar = Bar("VOO", now, open=100, high=101, low=99, close=100.5, volume=1000)

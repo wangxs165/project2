@@ -138,6 +138,15 @@ python3 -m unittest discover -s tests
   history/backtest actions so non-specialist users can understand the terminology.
 - Dashboard help now uses an in-app tooltip that opens on hover, focus, or click
   instead of relying on browser-native title text.
+- Live market-hours test on 2026-05-04 succeeded with yfinance:
+  - direct VOO and IAU bars were about 60 seconds old
+  - `POST /monitoring/run-once` returned `market_open: true`
+  - active watchlist symbols were evaluated with no provider errors
+  - no Telegram alert was sent because live confidence scores were below the
+    configured threshold
+- Fixed latest-price selection to use the newest inserted price row per symbol,
+  avoiding stale dashboard prices when UTC and Pacific timestamp strings are
+  mixed in SQLite.
 
 ## Manual Smoke-Test Checklist
 
