@@ -335,21 +335,25 @@ def create_app(
     @app.get("/signals")
     def signals(limit: int = 100):
         watchlist = set(app_storage.get_watchlist())
+        bounded_limit = max(1, min(limit, 100))
         filtered = [
             signal
-            for signal in app_storage.list_signals(limit=max(limit, 1000))
+            for signal in app_storage.list_signals(limit=1000)
             if signal["symbol"] in watchlist
         ]
-        bounded_limit = max(1, min(limit, 100))
         return {"signals": filtered[:bounded_limit]}
 
     @app.get("/notifications")
     def notifications(limit: int = 100):
-        return {"notifications": app_storage.list_notifications(limit=limit)}
+        bounded_limit = max(1, min(limit, 100))
+        return {"notifications": app_storage.list_notifications(limit=bounded_limit)}
 
     @app.get("/backtest/daily")
     def daily_backtest(symbol: str, days: int = 90, threshold: int = 75):
-        normalized = normalize_symbol(symbol)
+        try:
+            normalized = normalize_symbol(symbol)
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
         bounded_days = max(30, min(days, 250))
         bounded_threshold = max(0, min(threshold, 100))
         bars = list(market_data.daily_bars(normalized, bounded_days))
@@ -373,7 +377,10 @@ def create_app(
 
     @app.get("/backtest/stored-intraday")
     def stored_intraday_backtest(symbol: str, threshold: int = 75):
-        normalized = normalize_symbol(symbol)
+        try:
+            normalized = normalize_symbol(symbol)
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
         bounded_threshold = max(0, min(threshold, 100))
         intraday_rows = app_storage.list_bars(normalized, kind="intraday", limit=1000)
         empty_result = BacktestResult(

@@ -75,6 +75,21 @@ class FakeMarketDataProvider:
         return bars
 
 
+class RecordingStorage(Storage):
+    def __init__(self, path):
+        super().__init__(path)
+        self.signal_limits = []
+        self.notification_limits = []
+
+    def list_signals(self, limit=100):
+        self.signal_limits.append(limit)
+        return super().list_signals(limit)
+
+    def list_notifications(self, limit=100):
+        self.notification_limits.append(limit)
+        return super().list_notifications(limit)
+
+
 class ApiOptionalDependencyTests(unittest.TestCase):
     def test_create_app_has_helpful_error_without_fastapi(self):
         if importlib.util.find_spec("fastapi") is not None:
@@ -180,6 +195,52 @@ class ApiIntegrationTests(unittest.TestCase):
 
             stopped = client.post("/monitoring/stop")
             self.assertFalse(stopped.json()["monitoring"])
+
+            storage.close()
+
+    def test_invalid_symbols_return_bad_request(self):
+        from fastapi.testclient import TestClient
+
+        with tempfile.TemporaryDirectory() as tempdir:
+            storage = Storage(Path(tempdir) / "api.sqlite")
+            config = AppConfig(db_path=Path(tempdir) / "api.sqlite")
+            app = create_app(
+                config=config,
+                storage=storage,
+                monitoring_service=FakeMonitoringService(),
+                market_data_provider=FakeMarketDataProvider(),
+            )
+            client = TestClient(app, raise_server_exceptions=False)
+
+            daily = client.get("/backtest/daily?symbol=not valid")
+            stored = client.get("/backtest/stored-intraday?symbol=not valid")
+
+            self.assertEqual(daily.status_code, 400)
+            self.assertEqual(stored.status_code, 400)
+
+            storage.close()
+
+    def test_list_endpoint_limits_are_bounded_before_storage_queries(self):
+        from fastapi.testclient import TestClient
+
+        with tempfile.TemporaryDirectory() as tempdir:
+            storage = RecordingStorage(Path(tempdir) / "api.sqlite")
+            config = AppConfig(db_path=Path(tempdir) / "api.sqlite")
+            app = create_app(
+                config=config,
+                storage=storage,
+                monitoring_service=FakeMonitoringService(),
+                market_data_provider=FakeMarketDataProvider(),
+            )
+            client = TestClient(app)
+
+            signals = client.get("/signals?limit=999999")
+            notifications = client.get("/notifications?limit=999999")
+
+            self.assertEqual(signals.status_code, 200)
+            self.assertEqual(notifications.status_code, 200)
+            self.assertEqual(storage.signal_limits[-1], 1000)
+            self.assertEqual(storage.notification_limits[-1], 100)
 
             storage.close()
 

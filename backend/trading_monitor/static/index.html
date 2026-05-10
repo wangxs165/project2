@@ -476,6 +476,15 @@
         return response.json();
       }
 
+      function escapeHtml(value) {
+        return String(value ?? "")
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;")
+          .replace(/'/g, "&#39;");
+      }
+
       function money(value) {
         if (value === null || value === undefined || Number.isNaN(Number(value))) return "n/a";
         return Number(value).toLocaleString(undefined, {
@@ -501,14 +510,14 @@
           });
         }
         const date = new Date(value);
-        if (Number.isNaN(date.getTime())) return String(value);
+        if (Number.isNaN(date.getTime())) return escapeHtml(value);
         return date.toLocaleDateString(undefined, { month: "short", day: "numeric" });
       }
 
       function shortTime(value) {
         if (!value) return "n/a";
         const date = new Date(value);
-        if (Number.isNaN(date.getTime())) return String(value);
+        if (Number.isNaN(date.getTime())) return escapeHtml(value);
         return date.toLocaleString(undefined, {
           month: "short",
           day: "numeric",
@@ -539,7 +548,7 @@
                   const freshness = freshnessBadge(row.source_ts);
                   return `
                     <tr>
-                      <td><strong>${row.symbol}</strong></td>
+                      <td><strong>${escapeHtml(row.symbol)}</strong></td>
                       <td class="num">${money(row.price)}</td>
                       <td class="num">${number(row.volume)}</td>
                       <td><span class="badge ${freshness.className}">${freshness.label}</span></td>
@@ -574,7 +583,7 @@
                 return `
                   <div class="history-block">
                     <div class="history-title">
-                      <span>${symbol}</span>
+                      <span>${escapeHtml(symbol)}</span>
                       <span class="muted">${rows.length} days</span>
                     </div>
                     ${
@@ -618,7 +627,7 @@
       function storedHistoryView(result) {
         const bars = result.bars || [];
         if (!bars.length) {
-          return `<div class="empty">No stored ${result.kind} bars for ${result.symbol}.</div>`;
+          return `<div class="empty">No stored ${escapeHtml(result.kind)} bars for ${escapeHtml(result.symbol)}.</div>`;
         }
         return `
           <table>
@@ -752,8 +761,8 @@
                   <div class="signal-card">
                     <div class="signal-head">
                       <div class="signal-meta">
-                        <strong>${signal.symbol}</strong>
-                        <span class="muted">${signal.band}</span>
+                        <strong>${escapeHtml(signal.symbol)}</strong>
+                        <span class="muted">${escapeHtml(signal.band)}</span>
                       </div>
                       <span class="badge ${alertClass}">${signal.confidence} / 100</span>
                     </div>
@@ -777,7 +786,7 @@
                         </div>
                       </div>
                       <ul class="reason-list">
-                        ${(signal.reasons || []).map((reason) => `<li>${reason}</li>`).join("")}
+                        ${(signal.reasons || []).map((reason) => `<li>${escapeHtml(reason)}</li>`).join("")}
                       </ul>
                       <div class="score-grid">
                         ${Object.keys(scoreBreakdown)
@@ -816,7 +825,7 @@
         return `
           <div class="stack">
             <div class="row">
-              <span class="badge">${result.symbol}</span>
+              <span class="badge">${escapeHtml(result.symbol)}</span>
               <span class="muted">
                 ${result.days_tested} days tested, ${result.signal_days} signal days,
                 ${Math.round((result.signal_rate || 0) * 100)}% signal rate
@@ -889,7 +898,7 @@
                   </table>`
                 : ""
             }
-            <div class="muted">${result.warning}</div>
+            <div class="muted">${escapeHtml(result.warning)}</div>
           </div>
         `;
       }
@@ -909,8 +918,8 @@
         badge.className = `badge ${status.monitoring ? "status-ok" : "status-bad"}`;
 
         document.getElementById("status").innerHTML = `
-          <div class="metric"><span>Data provider</span><strong>${status.data_provider}</strong></div>
-          <div class="metric"><span>Provider status</span><strong>${status.data_provider_status}</strong></div>
+          <div class="metric"><span>Data provider</span><strong>${escapeHtml(status.data_provider)}</strong></div>
+          <div class="metric"><span>Provider status</span><strong>${escapeHtml(status.data_provider_status)}</strong></div>
           <div class="metric"><span>Tracked symbols</span><strong>${status.tracked_symbols.length}</strong></div>
           <div class="metric"><span>Latest prices</span><strong>${status.latest_price_count}</strong></div>
           <div class="metric"><span>Cycles completed</span><strong>${status.runner.cycles_completed}</strong></div>
@@ -923,8 +932,8 @@
 
         document.getElementById("symbols").innerHTML = symbols.symbols
           .map(
-            (symbol) => `<span class="pill">${symbol}
-              <button class="danger" data-remove="${symbol}">Remove</button>
+            (symbol) => `<span class="pill">${escapeHtml(symbol)}
+              <button class="danger" data-remove="${escapeAttr(symbol)}">Remove</button>
             </span>`
           )
           .join("");
@@ -947,8 +956,8 @@
           "No notifications yet.",
           (notification) => `
             <tr>
-              <td><strong>${notification.symbol}</strong></td>
-              <td>${notification.status}</td>
+              <td><strong>${escapeHtml(notification.symbol)}</strong></td>
+              <td>${escapeHtml(notification.status)}</td>
               <td class="num">${notification.confidence ?? "n/a"}</td>
               <td>${shortTime(notification.created_at)}</td>
             </tr>
